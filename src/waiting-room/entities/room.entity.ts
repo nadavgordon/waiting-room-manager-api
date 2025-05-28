@@ -24,8 +24,8 @@ export class Room {
   maxPlayers: number;
 
   @Column({
-    type: 'enum',
-    enum: RoomStatus,
+    type: 'varchar', // Changed from 'enum' for SQLite compatibility
+    enum: RoomStatus, // Still useful for validation and type safety in code
     default: RoomStatus.WAITING,
   })
   status: RoomStatus;

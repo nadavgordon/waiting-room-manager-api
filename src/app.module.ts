@@ -9,7 +9,7 @@ import { WaitingRoomModule } from './waiting-room/waiting-room.module';
     TypeOrmModule.forRoot({
       type: 'sqlite',
       database: 'db/waiting_room.sqlite',
-      entities: [__dirname + '/../**/*.entity{.ts,.js}'],
+      autoLoadEntities: true,
       synchronize: true, // WARNING: Set to false in production
     }),
     WaitingRoomModule,
