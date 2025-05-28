@@ -1,0 +1,389 @@
+# --- MDML Blueprint Specification (v2.6 - As Template) ---
+# Dual Purpose: 1. Specification for MDML Blueprint v2.6. 2. Template for new Blueprints.
+# Usage: Fill `[...]` placeholders. Adapt/remove examples. Relies on structure, minimal tags.
+
+# --- Clean Instance Skeleton & AI AGENT NOTE ---
+#
+# AI AGENT NOTE:
+# When generating an MDML Blueprint *instance*, use the "Clean Instance Skeleton" below.
+# Populate values directly. DO NOT replicate schema fields (like `description`,
+# `example_instance_value`, `<<...>>` details) from the main template body into the *instance*.
+# The main template body is for schema understanding and detailed guidance, not direct instance replication.
+#
+# Clean Instance Skeleton:
+# ```yaml
+# metadata:
+#   version: "2.6" # Instance version
+#   status: "[Status (e.g., draft, active)]"
+#   date: "[YYYY-MM-DD]"
+#   title: "MDML Blueprint: [Project or System Name]"
+#   authors:
+#     - name: "[Author Name]"
+#   summary: "Blueprint for [Project Name], covering [Scope Summary]."
+#   tags: ["mdml", "blueprint", "[domain_tag]", "[tech_tag]"]
+#
+# introduction_and_goals:
+#   problem_statement: "[Problem Statement]"
+#   goals_and_objectives:
+#     - goal_id: "[G-01]"
+#       description: "[Goal Description]"
+#   scope:
+#     in_scope: ["[In-scope item 1]"]
+#     out_of_scope: ["[Out-of-scope item 1]"]
+#   target_audience: ["[Audience 1]"]
+#   success_criteria: ["[Success Criterion 1]"]
+#
+# architectural_overview:
+#   high_level_design_philosophy: "[Design Philosophy]"
+#   key_architectural_decisions:
+#     - decision_id: "[AD-01]"
+#       decision: "[Decision Made]"
+#       rationale: "[Rationale]"
+#   technology_stack_rationale:
+#     - component_area: "[Tech Area (e.g., Backend)]"
+#       choices: ["[Tech Choice 1 (e.g., Python)]"]
+#       rationale: "[Rationale for choices]"
+#   architectural_diagrams_references:
+#     - diagram_id: "[DGM-01]"
+#       description: "[Diagram Description]"
+#       location: "[path/to/diagram.png or URL]"
+#
+# components_and_modules:
+#   - component_id: "[Comp-001]"
+#     name: "[Component Name]"
+#     description: "[Component Description]"
+#     responsibilities: ["[Responsibility 1]"]
+#     technologies_used: ["[Tech 1]"]
+#     interfaces_provided: ["[Interface 1]"]
+#     dependencies: ["[Dependency Comp-ID]"]
+#
+# data_models_and_management:
+#   data_entities_and_relationships:
+#     - entity_name: "[Entity1]"
+#       attributes: {"id": "string", "name": "string"}
+#       relationships: [{"type": "one-to-many", "to_entity": "[Entity2]"}]
+#   database_choice_and_rationale:
+#     database_system: "[DB System (e.g., PostgreSQL)]"
+#     rationale: "[Rationale]"
+#   data_storage_strategy: "[Storage Strategy]"
+#   data_migration_strategy: # Optional
+#     description: "[Migration Description]"
+#   data_security_and_privacy: "[Security/Privacy Measures]"
+#
+# api_design_and_endpoints: # If applicable
+#   restful_api_conventions: "[Conventions (e.g., JSON:API)]"
+#   endpoint_definitions:
+#     - http_method: "GET"
+#       path: "/resource"
+#       description: "[Endpoint Description]"
+#   authentication_and_authorization: "[Auth Method]"
+#   versioning_strategy: "[API Versioning Strategy]"
+#   api_documentation_approach: "[API Docs Approach (e.g., OpenAPI)]"
+#
+# deployment_and_operations:
+#   target_environments: ["[Environment 1 (e.g., Production AWS)]"]
+#   deployment_strategy: "[Deployment Strategy (e.g., Blue/Green)]"
+#   ci_cd_pipeline_overview: "[CI/CD Overview]"
+#   monitoring_and_logging_strategy: "[Monitoring/Logging Tools & Strategy]"
+#   scalability_and_performance_considerations: "[Scalability Notes]"
+#   backup_and_recovery_plan: "[Backup/Recovery Plan]"
+#
+# security_considerations:
+#   threat_model_summary: "[Threat Model Summary]"
+#   key_security_measures: ["[Security Measure 1]"]
+#   data_protection_details: "[Data Protection Details]"
+#   incident_response_plan_summary: "[Incident Response Summary]"
+#
+# testing_strategy:
+#   unit_tests: { scope: "[Unit Test Scope]", tools: ["[Tool 1]"] }
+#   integration_tests: { scope: "[Integration Test Scope]", tools: ["[Tool 1]"] }
+#   # e2e, performance, security tests as needed
+#
+# project_plan_and_execution:
+#   milestones_and_timeline:
+#     - milestone_id: "[M1]"
+#       name: "[Milestone Name]"
+#       description: "[Milestone Description]"
+#       estimated_completion: "[Date or Sprint]"
+#       deliverables: ["[Deliverable 1]"]
+#   team_structure_and_roles: "[Team Structure Overview]"
+#   development_methodology: "[Methodology (e.g., Agile/Scrum)]"
+#   communication_plan: "[Communication Plan]"
+#
+# documentation_plan:
+#   types_of_documentation: ["[Doc Type 1 (e.g., User Manual)]"]
+#   documentation_tools: ["[Tool 1 (e.g., MkDocs)]"]
+#   maintenance_and_updates: "[Doc Maintenance Plan]"
+#
+# glossary_of_terms: # Optional
+#   - term: "[Term 1]"
+#     definition: "[Definition 1]"
+#
+# appendices_and_references: # Optional
+#   - reference_id: "[REF-01]"
+#     description: "[Reference Description]"
+#     location: "[URL or Document Path]"
+# ```
+#
+# --- Main Blueprint Template (Schema Details Follow) ---
+
+metadata:
+  version: "2.6-template" # Template version
+  status: "template"
+  date: "<<YYYY-MM-DD>>" # Date of new Blueprint instance
+  title: "MDML Blueprint: <<PROJECT_OR_SYSTEM_NAME>>"
+  authors:
+    - name: "<<AUTHOR_NAME>>"
+      email: "<<AUTHOR_EMAIL (Optional)>>"
+  schema_url: "https://schema.mdml.dev/blueprint/v2.6.json" # Official schema
+  profile: "standard" # e.g., "standard", "detailed"
+  summary: >-
+    Purpose: Define architecture, components, plan for <<PROJECT_OR_SYSTEM_NAME>>.
+    This template structures the blueprint for human/agent understanding.
+    Scope: <<BRIEF_SCOPE_DESCRIPTION>>
+  tags: [
+      "mdml",
+      "mdml blueprint",
+      "template",
+      "architecture",
+      "<<DOMAIN_TAG>>", # e.g., "software_development"
+      "<<TECH_TAG>>", # e.g., "python_backend"
+    ]
+  relationships:
+    description: >-
+      How this Blueprint relates to other documents/plans.
+    items: # Optional list of formal relationships
+      - relationship_type: "<<e.g., 'derived_from', 'part_of'>>"
+        target_document_id: "<<OTHER_DOC_ID>>"
+        description: "<<Brief note on relationship>>"
+
+introduction_and_goals:
+  problem_statement: >-
+    (Required) What problem does <<PROJECT_OR_SYSTEM_NAME>> solve?
+    TEMPLATE HINT: Clearly define the pain point or opportunity.
+    Example: "Current manual data entry is inefficient and error-prone."
+  goals_and_objectives:
+    description: (Required) Primary goals and specific, measurable objectives.
+    items:
+      - goal_id: "<<G-01>>"
+        description: "<<e.g., Automate data processing pipeline>>"
+        metrics: ["<<e.g., Reduce processing time by 50%>>"] # Optional
+  scope:
+    description: (Required) What is included and excluded.
+    in_scope:
+      - "<<Key feature/module 1 that IS INCLUDED>>"
+    out_of_scope:
+      - "<<Related feature/module 1 that IS NOT INCLUDED>>"
+  target_audience:
+    description: (Required) Who is this system/project for?
+    items:
+      - "<<e.g., End Users (Data Analysts)>>"
+      - "<<e.g., System Administrators>>"
+  success_criteria:
+    description: (Required) How will success be defined and measured?
+    items:
+      - "<<e.g., Achieve 99.9% uptime in the first 6 months>>"
+      - "<<e.g., User adoption rate of 75% within 3 months post-launch>>"
+
+architectural_overview:
+  high_level_design_philosophy: >-
+    (Required) Core principles guiding the architecture (e.g., microservices, serverless, modular monolith).
+    Example: "Prioritize scalability and maintainability through a microservices-based approach."
+  key_architectural_decisions:
+    description: (Required) Significant design choices and their rationale.
+    items:
+      - decision_id: "<<AD-01>>"
+        decision: "<<e.g., Choice of primary programming language/framework>>"
+        rationale: "<<e.g., Team expertise, ecosystem, performance needs>>"
+        alternatives_considered: ["<<Alternative 1>>"] # Optional
+  technology_stack_rationale:
+    description: (Required) Chosen technologies for major areas and why.
+    items:
+      - component_area: "<<e.g., Frontend, Backend, Database, Messaging Queue>>"
+        choices: ["<<e.g., React, Python (FastAPI), PostgreSQL, RabbitMQ>>"]
+        rationale: "<<Justification for these choices>>"
+  architectural_diagrams_references:
+    description: (Required) Links/references to key architectural diagrams.
+    items:
+      - diagram_id: "<<DGM-SYS-001>>"
+        title: "<<e.g., System Context Diagram>>"
+        description: "<<Brief overview of what the diagram shows>>"
+        location: "<<path/to/diagram.png or URL to diagramming tool>>"
+        type: "<<e.g., C4 Context, Sequence Diagram, ERD>>" # Optional
+
+components_and_modules:
+  description: >-
+    (Required) Breakdown of the system into its major components/modules.
+    TEMPLATE HINT: For each component, detail its role, tech, interfaces, and dependencies.
+  items:
+    - component_id: "<<COMP-001>>" # Unique identifier
+      name: "<<e.g., User Authentication Service>>"
+      description: "<<Purpose and main function of this component>>"
+      responsibilities: # List of key responsibilities
+        - "<<e.g., Handle user registration and login>>"
+        - "<<e.g., Manage user sessions and tokens>>"
+      technologies_used: ["<<e.g., Python, FastAPI, JWT>>"] # Key technologies
+      interfaces_provided: # How other components interact with this one
+        - interface_id: "<<API-AUTH-V1>>"
+          type: "<<e.g., REST API, gRPC, Message Queue>>"
+          description: "<<e.g., Provides endpoints for user management>>"
+      dependencies: # List of component_ids this component depends on
+        - "<<COMP-002 (e.g., User Database Wrapper)>>"
+      # data_managed: ["<<e.g., UserCredentials, SessionData>>"] # Optional
+
+data_models_and_management:
+  data_entities_and_relationships:
+    description: (Required) Key data entities, their attributes, and relationships.
+    items:
+      - entity_name: "<<e.g., User>>"
+        description: "<<Represents a user of the system>>"
+        attributes:
+          - name: "<<id>>"
+            type: "<<UUID>>"
+            description: "Primary key"
+          - name: "<<username>>"
+            type: "<<string>>"
+            constraints: "unique, required"
+        relationships:
+          - type: "<<e.g., one-to-many>>"
+            to_entity: "<<e.g., Order>>"
+            description: "<<A user can have multiple orders>>"
+    erd_link_or_image: "<<path/to/erd.png or link to ERD in tool (Optional)>>"
+  database_choice_and_rationale:
+    description: (Required) Chosen database system(s) and justification.
+    database_system: "<<e.g., PostgreSQL, MongoDB, AWS DynamoDB>>"
+    rationale: "<<Why this DB? Consider data model, scalability, consistency, team skills.>>"
+  data_storage_strategy: >-
+    (Required) How data will be stored, partitioned, indexed, etc.
+    Example: "User data stored in relational DB, product catalog in NoSQL document store for flexibility."
+  data_migration_strategy: # Optional, but important if replacing or integrating systems
+    description: "Approach for migrating existing data, if any."
+    steps: ["<<Step 1: Analyze source data>>", "<<Step 2: Define mapping>>"]
+  data_security_and_privacy: >-
+    (Required) Measures for data security (encryption, access control) and privacy compliance.
+    Example: "All PII encrypted at rest and in transit. Role-based access control implemented."
+
+api_design_and_endpoints: # Section required if the system exposes APIs
+  restful_api_conventions: >-
+    (Required if REST API) Conventions followed (e.g., HATEOAS, JSON:API, standard HTTP status codes).
+    Example: "Uses standard HTTP verbs, plural nouns for resources, snake_case for attributes."
+  endpoint_definitions:
+    description: (Required if API exists) List of key API endpoints.
+    items:
+      - http_method: "<<GET/POST/PUT/DELETE>>"
+        path: "<<e.g., /users/{id}>>"
+        description: "<<Purpose of the endpoint>>"
+        request_schema: {
+            type: "<<object/array>>",
+            properties: { "<<param>>": { type: "<<string>>" } },
+          } # Simplified
+        response_schema: { "200 OK": { $ref: "#/components/schemas/User" } } # OpenAPI style example
+  authentication_and_authorization: >-
+    (Required if API exists) How API access is secured.
+    Example: "OAuth 2.0 Bearer Tokens for authentication; scope-based authorization."
+  versioning_strategy: >-
+    (Required if API exists) How API versions will be managed (e.g., URL path, header).
+    Example: "URI versioning, e.g., /v1/users."
+  rate_limiting_and_throttling: "Strategy for API usage limits (if applicable)."
+  api_documentation_approach: >-
+    (Required if API exists) How API will be documented (e.g., OpenAPI/Swagger, Postman).
+    Example: "OpenAPI 3.0 specification generated from code annotations."
+
+deployment_and_operations:
+  target_environments:
+    description: (Required) Where the system will be deployed (e.g., AWS, Azure, on-prem).
+    items:
+      - name: "<<e.g., Development>>"
+        platform: "<<e.g., Local Docker, Cloud Dev Account>>"
+      - name: "<<e.g., Production>>"
+        platform: "<<e.g., AWS EKS Cluster>>"
+  deployment_strategy: >-
+    (Required) How code is deployed (e.g., blue/green, canary, rolling updates).
+    Example: "Blue/green deployments for production to minimize downtime."
+  ci_cd_pipeline_overview: >-
+    (Required) Continuous Integration/Delivery pipeline summary.
+    Tools: ["<<e.g., Jenkins, GitLab CI, GitHub Actions>>"]
+    Stages: ["<<Build -> Test -> Deploy_Staging -> Approve -> Deploy_Prod>>"]
+  monitoring_and_logging_strategy:
+    description: (Required) How system health is monitored and logs managed.
+    monitoring_tools: ["<<e.g., Prometheus, Grafana, AWS CloudWatch>>"]
+    logging_tools: ["<<e.g., ELK Stack, Splunk>>"]
+    key_metrics_to_monitor:
+      ["<<e.g., API latency, error rates, CPU/memory usage>>"]
+  scalability_and_performance_considerations: >-
+    (Required) How system will scale and perform under load.
+    Example: "Auto-scaling groups for compute; database read replicas."
+  backup_and_recovery_plan:
+    description: (Required) Data backup and disaster recovery strategy.
+    backup_frequency: "<<e.g., Daily full, hourly incremental>>"
+    recovery_time_objective_rto: "<<e.g., 4 hours>>"
+    recovery_point_objective_rpo: "<<e.g., 1 hour>>"
+
+security_considerations:
+  threat_model_summary: >-
+    (Required) Overview of potential threats and vulnerabilities.
+    Example: "Key threats include unauthorized access, data breaches, DoS attacks."
+  key_security_measures:
+    description: (Required) Specific security controls implemented.
+    items:
+      - "<<e.g., Use of HTTPS for all communications>>"
+      - "<<e.g., Regular security patching and updates>>"
+      - "<<e.g., Input validation and output encoding to prevent XSS/SQLi>>"
+  data_protection_details: "Specifics on protecting sensitive data beyond general DB security."
+  incident_response_plan_summary: "Brief on how security incidents will be handled."
+
+testing_strategy:
+  description: (Required) Overall approach to testing.
+  unit_tests:
+    scope: "Individual functions/classes."
+    tools: ["<<e.g., Pytest, JUnit, Jest>>"]
+    coverage_target: "<<e.g., 80% line coverage>>" # Optional
+  integration_tests:
+    scope: "Interactions between components/services."
+    tools: ["<<e.g., Supertest, Spring Test>>"]
+  end_to_end_tests: # Optional
+    scope: "Full user workflows through the system."
+    tools: ["<<e.g., Cypress, Selenium>>"]
+  performance_tests: # Optional
+    scope: "Load, stress, soak testing."
+    tools: ["<<e.g., JMeter, k6>>"]
+  security_testing: # Optional
+    scope: "Vulnerability scans, penetration testing."
+    tools_and_methods: ["<<e.g., OWASP ZAP, manual pen-testing>>"]
+
+project_plan_and_execution:
+  milestones_and_timeline:
+    description: (Required) Key project milestones and estimated timeline.
+    items:
+      - milestone_id: "<<M1>>"
+        name: "<<e.g., Phase 1: Core API Development>>"
+        description: "<<Deliverables and goals for this milestone>>"
+        estimated_completion: "<<YYYY-MM-DD or Sprint X>>"
+        deliverables:
+          ["<<e.g., Functional User API>>", "<<e.g., Database Schema v1>>"]
+  team_structure_and_roles: "Overview of team roles and responsibilities."
+  development_methodology: "<<e.g., Agile (Scrum), Kanban, Waterfall>>"
+  communication_plan: "How team and stakeholders will communicate (meetings, tools)."
+
+documentation_plan:
+  description: (Required) Plan for creating and maintaining documentation.
+  types_of_documentation:
+    - "<<e.g., API Documentation (Swagger/OpenAPI)>>"
+    - "<<e.g., User Manual>>"
+    - "<<e.g., Operations Guide>>"
+  documentation_tools: ["<<e.g., MkDocs, Sphinx, Confluence>>"]
+  maintenance_and_updates: "Process for keeping documentation current."
+
+glossary_of_terms: # Optional
+  description: Definitions of key terms, acronyms, or domain-specific jargon.
+  items:
+    - term: "<<e.g., PII>>"
+      definition: "<<Personally Identifiable Information>>"
+
+appendices_and_references: # Optional
+  description: Supplementary materials, links to external documents.
+  items:
+    - reference_id: "<<REF-001>>"
+      description: "<<e.g., Link to main requirements document>>"
+      location: "<<URL or path>>"
+# --- End of MDML Blueprint (v2.6 - As Template, Condensed) ---

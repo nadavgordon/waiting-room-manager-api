@@ -1,0 +1,217 @@
+mdml_version: "Agenda-1.4"
+document_type: AgendaInstance
+
+agenda_metadata:
+  name: "Waiting Room Manager API - Development Agenda"
+  version: "1.0"
+  goal: "To build a RESTful API for managing multiplayer game waiting rooms, including creation, joining, and game start functionalities, along with containerization for deployment."
+  creation_date: "2025-05-27"
+  last_updated_date: "2025-05-27"
+  authors:
+    - name: "AI Assistant Cascade"
+      role: "MDML Author"
+  status: "draft"
+  scope_summary: "In scope: API development, Dockerization, basic K8s setup, documentation. Out of scope: Advanced K8s features beyond provided YAMLs, extensive UI development, production-grade load testing."
+  target_audience: "Backend Engineer, DevOps Engineer, Project Stakeholders"
+  estimated_duration: "1-2 days (as per original task estimation)"
+  related_documents:
+    - doc_id: "WRM-API-REQ-MD"
+      description: "Main requirements and overview markdown file."
+      location: "plan/waiting-room-manager-api.md"
+
+executor_persona:
+  role: "Backend Software Developer & DevOps Engineer"
+  expertise_level: "Mid-level to Senior, proficient in chosen backend stack (Node.js or PHP/Laravel) and Docker."
+  responsibilities:
+    - "Implement API endpoints as specified."
+    - "Ensure code quality, security, and maintainability."
+    - "Create Dockerfile and necessary configurations for containerization."
+    - "(Bonus) Prepare Kubernetes deployment YAMLs."
+    - "Document the API and setup procedures."
+  communication_style: "Clear, concise, with proactive updates on progress and potential issues."
+  tools_and_technologies:
+    - "Node.js (NestJS/AdonisJS/Express+TS) OR PHP (Laravel)"
+    - "Chosen ORM (e.g., TypeORM, Sequelize, Eloquent)"
+    - "SQLite, MySQL, or PostgreSQL"
+    - "Docker"
+    - "Git"
+    - "(Bonus) Kubernetes, Helm"
+    - "(Bonus) OpenAPI/Swagger tools or Postman"
+
+task_context:
+  project_background: "The project is to build a RESTful API for managing multiplayer game waiting rooms. This API is a core component for a gaming platform, allowing users to create, join, and manage game sessions before they start. The task serves as an evaluation of backend development, containerization, and deployment skills."
+  problem_statement: "Game developers require a standardized and robust system to manage pre-game lobbies or waiting rooms, handling aspects like room visibility, player limits, join requests, and game initiation."
+  user_stories_or_scenarios:
+    - story_id: "US-001"
+      as_a: "Game Host"
+      i_want_to: "create a new game room with specific settings (title, public/private, player limits, join approval, start mode)"
+      so_that: "I can set up a waiting area for my game tailored to my preferences."
+    - story_id: "US-002"
+      as_a: "Player"
+      i_want_to: "see a list of public game rooms"
+      so_that: "I can find and choose a game to join."
+    - story_id: "US-003"
+      as_a: "Player"
+      i_want_to: "request to join a specific room"
+      so_that: "I can participate in the game when it starts."
+    - story_id: "US-004"
+      as_a: "Game Host"
+      i_want_to: "approve or decline join requests for my private room if approval is required"
+      so_that: "I can control who joins my game."
+    - story_id: "US-005"
+      as_a: "Player or Host"
+      i_want_to: "leave a room I am currently in"
+      so_that: "I am no longer part of that waiting room."
+    - story_id: "US-006"
+      as_a: "Game Host"
+      i_want_to: "start the game when all conditions are met (e.g., min players, manual trigger)"
+      so_that: "the game session can begin for all participants."
+    - story_id: "US-007"
+      as_a: "Game Host"
+      i_want_to: "delete a room I created"
+      so_that: "the room is no longer available."
+  business_value_or_impact: "Successful completion will demonstrate proficiency in backend API development, modern DevOps practices, and the ability to deliver a functional, well-documented application component. For a real-world scenario, this API would be crucial for player engagement and game session management."
+
+task_definition:
+  overall_task_description: "Develop, test, and document the Waiting Room Manager API as per the specified requirements. This includes implementing all defined API endpoints, ensuring code quality and security, and preparing the application for containerized deployment using Docker, with bonus considerations for Kubernetes."
+  key_deliverables:
+    - "Fully functional RESTful API implementing all specified features."
+    - "Source code hosted in a Git repository."
+    - "Multi-step Dockerfile and .dockerignore file."
+    - "(Bonus) Kubernetes YAML files (deployment, service, configmap, secret)."
+    - "Comprehensive README.md including API description, setup instructions (local & containerized), deployment steps, database migration instructions, and any assumptions."
+    - "(Bonus) OpenAPI/Swagger specification or Postman collection."
+    - "(Bonus) Basic test coverage."
+  instructions:
+    preliminary_steps:
+      - "Choose technology stack (PHP/Laravel or Node.js variant)."
+      - "Set up local development environment for the chosen stack."
+      - "Initialize Git repository."
+    core_steps:
+      - step_id: "API-IMPL-01"
+        description: "Implement Room Creation (`POST /api/rooms`)."
+        sub_steps:
+          - "Define room model/entity (Title, IsPublic, ApprovalRequired, Min/Max Players, AutoStart, HostID, RoomIdentifier)."
+          - "Implement logic for generating random, hard-to-guess room identifier."
+          - "Handle request validation and persistence."
+          - "Implement simulated or basic authentication to assign host."
+      - step_id: "API-IMPL-02"
+        description: "Implement List Waiting Rooms (`GET /api/rooms`)."
+        sub_steps:
+          - "Filter public rooms and private rooms where user is host/player."
+      - step_id: "API-IMPL-03"
+        description: "Implement Join Room (`POST /api/rooms/{room}/join`)."
+        sub_steps:
+          - "Handle player joining logic, considering room capacity and approval requirements."
+      - step_id: "API-IMPL-04"
+        description: "Implement Join Request Approval (`POST /api/rooms/{room}/pending-requests/{request}/respond`)."
+      - step_id: "API-IMPL-05"
+        description: "Implement Leave Room (`POST /api/rooms/{room}/leave`)."
+      - step_id: "API-IMPL-06"
+        description: "Implement Start Game (`POST /api/rooms/{id}/start`)."
+        sub_steps:
+          - "Verify host privileges and game start conditions (e.g., player count)."
+      - step_id: "API-IMPL-07"
+        description: "Implement Delete Room (`DELETE /api/rooms/{room})."
+      - step_id: "API-SEC-01"
+        description: "Implement Security Measures."
+        sub_steps:
+          - "Ensure protection against SQL Injection."
+          - "Implement fine-grained CORS management (no '*')."
+          - "Ensure no secrets are included in the codebase/repository."
+          - "(Bonus) Implement trusted proxy mechanism for user IP."
+      - step_id: "DEVOPS-DOCKER-01"
+        description: "Prepare Docker setup."
+        sub_steps:
+          - "Define a multi-step Dockerfile."
+          - "Configure .dockerignore."
+          - "Use environment variables for configuration."
+          - "Ensure application does not run as root in the container."
+      - step_id: "DEVOPS-K8S-01"
+        description: "(Bonus) Prepare Kubernetes YAMLs."
+        sub_steps:
+          - "Create deployment.yaml, service.yaml, configmap.yaml, secret.yaml."
+      - step_id: "DOC-01"
+        description: "Create README documentation."
+    post_completion_steps:
+      - "Review all deliverables against the submission checklist."
+      - "Ensure repository is public or shareable as instructed."
+  constraints_and_assumptions:
+    constraints:
+      - "Must use one of the specified technology stacks (PHP/Laravel or Node.js variant)."
+      - "ORM must be used for database interaction (SQLite, MySQL, or PostgreSQL)."
+      - "Authentication can be simulated or basic."
+      - "Codebase must be organized and well-structured."
+      - "No wildcard CORS allowed."
+      - "No secrets in the repository."
+    assumptions:
+      - "The executor has access to development tools for the chosen stack."
+      - "Basic understanding of REST API principles is present."
+      - "Familiarity with Docker fundamentals."
+  success_metrics_or_evaluation_criteria:
+    - "All API endpoints function as described."
+    - "Code is clean, readable, maintainable, and follows best practices for the chosen stack."
+    - "Application is successfully containerized with Docker and runs as expected."
+    - "(Bonus) Kubernetes deployment functions correctly."
+    - "Security requirements (SQLi, CORS, no secrets) are met."
+    - "README provides clear and complete instructions."
+    - "All items in submission checklist are addressed."
+  acceptance_criteria:
+    - "API allows creation of rooms with specified configurations."
+    - "Public rooms are listable; private rooms are listable under correct conditions."
+    - "Users can join and leave rooms; join requests can be managed."
+    - "Games can be started by hosts and rooms can be deleted."
+    - "Docker image builds and runs the application successfully."
+
+output_specification:
+  expected_outputs:
+    - output_id: "SRC-CODE"
+      description: "Source code of the Waiting Room Manager API."
+      format_or_type: "Git Repository (public or shared ZIP)"
+      delivery_method: "URL or ZIP file to interview@tech.co.il"
+    - output_id: "DOCKERFILE"
+      description: "Dockerfile for building the application container."
+      format_or_type: "Dockerfile (text file)"
+      delivery_method: "Included in Git repository"
+    - output_id: "K8S-YAMLS"
+      description: "(Bonus) Kubernetes deployment YAML files."
+      format_or_type: "YAML files"
+      delivery_method: "Included in Git repository"
+    - output_id: "README"
+      description: "Project README file."
+      format_or_type: "Markdown file (README.md)"
+      delivery_method: "Included in Git repository"
+    - output_id: "API-DOCS"
+      description: "(Bonus) API documentation (Swagger/OpenAPI/Postman)."
+      format_or_type: "JSON/YAML or Postman Collection"
+      delivery_method: "Included in Git repository or link provided"
+  quality_standards_for_output:
+    - "Code: Well-commented where necessary, adheres to linting/formatting standards of the chosen framework."
+    - "Documentation: Clear, concise, accurate, and comprehensive."
+    - "Configuration Files: Correctly formatted and functional."
+
+glossary_and_definitions:
+  - term: "WRM API"
+    definition: "Waiting Room Manager API, the subject of this development task."
+  - term: "CORS"
+    definition: "Cross-Origin Resource Sharing, a security mechanism for web applications."
+
+few_shot_examples:
+  - example_id: "FS-CORS-CONFIG"
+    description: "Example of a non-wildcard CORS configuration for Express.js."
+    input:
+      scenario: "Setting up CORS for allowed origins example.com and api.example.com"
+    expected_output:
+      code_snippet: |
+        const cors = require('cors');
+        const allowedOrigins = ['http://example.com', 'https://api.example.com'];
+        const corsOptions = {
+          origin: function (origin, callback) {
+            if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+              callback(null, true);
+            } else {
+              callback(new Error('Not allowed by CORS'));
+            }
+          }
+        };
+        // app.use(cors(corsOptions)); // Example usage

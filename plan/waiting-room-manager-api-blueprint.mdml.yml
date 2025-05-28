@@ -1,0 +1,723 @@
+metadata:
+  version: "2.5"
+  status: "draft"
+  date: "2025-05-27"
+  title: "MDML Blueprint: Waiting Room Manager API"
+  authors:
+    - name: "AI Assistant Cascade"
+      email: "cascade@windsurf.ai"
+  schema_url: "https://schema.mdml.dev/blueprint/v2.5.json"
+  profile: "standard"
+  summary: >-
+    This blueprint outlines the architecture, components, processes, and plan for
+    the Waiting Room Manager API. The API will allow users to create, manage, join,
+    and start game waiting rooms. It is designed to be a RESTful service with options
+    for PHP/Laravel or Node.js (NestJS/AdonisJS/Express+TS) stacks, using an ORM
+    with SQLite, MySQL, or PostgreSQL, and prepared for Docker containerization.
+  tags:
+    [
+      "mdml",
+      "mdml blueprint",
+      "api",
+      "backend",
+      "waiting room",
+      "game development",
+      "restful",
+      "docker",
+      "kubernetes",
+      "php",
+      "laravel",
+      "nodejs",
+      "nestjs",
+      "adonisjs",
+      "expressjs",
+      "typescript",
+    ]
+  relationships:
+    description: >-
+      This blueprint is derived from the requirements specified in the
+      `plan/waiting-room-manager-api.md` document. It serves as the architectural
+      guide for the development task outlined in that document and its corresponding
+      MDML Agenda.
+    related_documents:
+      - id: "WRM-REQ-DOC"
+        type: "Requirements Specification"
+        path_or_url: "plan/waiting-room-manager-api.md"
+        description: "The primary document detailing the project task, features, and constraints."
+      - id: "WRM-AGENDA-MDML"
+        type: "MDML Agenda"
+        path_or_url: "plan/waiting-room-manager-api-agenda.mdml.yml"
+        description: "The MDML Agenda detailing tasks and execution plan for this project."
+
+introduction_and_goals:
+  problem_statement: >-
+    Game developers need a flexible and reliable system to manage pre-game lobbies (waiting rooms)
+    where players can gather before a multiplayer game starts. This system needs to handle room
+    creation with various configurations, player joining/leaving, join request management, and
+    game initiation, all exposed via a secure and well-documented RESTful API.
+  project_goals_and_objectives:
+    - "Develop a fully functional RESTful API for waiting room management."
+    - "Ensure the API supports all specified features: room creation (with title, visibility, player limits, join approval, auto/manual start), listing rooms, joining/leaving rooms, approving/declining join requests, starting games, and deleting rooms."
+    - "Implement using one of the chosen technology stacks: PHP (Laravel) or Node.js (NestJS, AdonisJS, or Vanilla Express with TypeScript)."
+    - "Utilize a well-known ORM for database interaction with SQLite, MySQL, or PostgreSQL."
+    - "Ensure the codebase is well-organized, clean, readable, and maintainable."
+    - "Implement security best practices: simulated/basic authentication, fine-grained CORS, SQL injection protection, no secrets in code."
+    - "Prepare the application for containerized deployment using Docker (multi-step Dockerfile, .dockerignore, environment variables, non-root execution)."
+    - "(Bonus) Provide Kubernetes deployment YAMLs (deployment, service, configmap, secret)."
+    - "(Bonus) Provide API documentation (Swagger/OpenAPI/Postman)."
+    - "(Bonus) Implement basic test coverage."
+    - "(Bonus) Implement rate limiting."
+  scope:
+    in_scope:
+      - "Core API functionality as defined in `plan/waiting-room-manager-api.md`."
+      - "Choice of one specified backend technology stack."
+      - "ORM-based database interaction."
+      - "Simulated or basic API key/user ID authentication."
+      - "Dockerization for development and deployment."
+      - "README documentation covering setup, API usage, and deployment."
+      - "Bonus features as listed if time permits (Kubernetes YAMLs, API docs, tests, rate limiting, Helm, basic frontend, CLI)."
+    out_of_scope:
+      - "Production-grade, complex authentication systems (e.g., OAuth2 full flow)."
+      - "Advanced real-time features beyond basic API polling (e.g., WebSockets for room updates unless specifically added as a self-chosen enhancement)."
+      - "User interface development beyond a very basic optional frontend."
+      - "Load testing or performance optimization beyond general good practices."
+      - "Automated E2E testing infrastructure."
+  target_audience:
+    - "Interviewing Backend Engineers (as a take-home task)."
+    - "Internal development teams needing a waiting room microservice."
+  success_criteria:
+    - "API fulfills all functional requirements specified."
+    - "Code quality meets professional standards (clean, maintainable, secure)."
+    - "Application can be successfully built and run using Docker."
+    - "README provides comprehensive guidance."
+    - "(Bonus) Bonus features are implemented correctly and add value."
+
+architectural_overview:
+  high_level_design_philosophy: >-
+    The API will follow a standard RESTful architecture, emphasizing statelessness, clear resource
+    identification, and standard HTTP methods for operations. The design will be modular, separating
+    concerns (e.g., routing, controllers/handlers, services, data access). The choice of framework
+    (Laravel, NestJS, AdonisJS, or Express) will guide specific implementation patterns, but the
+    overall goal is a layered architecture that is easy to understand, test, and maintain.
+    Security and scalability will be considered from the outset, even if full implementations
+    are simplified for the task's scope.
+  technology_stack_choices_and_rationale:
+    backend_language_and_framework:
+      options:
+        - stack: "PHP 8.2+ with Laravel 10+"
+          rationale: "Mature framework, rapid development, strong ORM (Eloquent), large community, rich ecosystem."
+        - stack: "Node.js with NestJS"
+          rationale: "TypeScript-based, modular, uses Express/Fastify, good for building efficient and scalable server-side applications, strong DI, similar to Angular patterns."
+        - stack: "Node.js with AdonisJS"
+          rationale: "TypeScript-based, full-featured MVC framework inspired by Laravel, good ORM (Lucid), cohesive."
+        - stack: "Node.js with Vanilla Express (TypeScript)"
+          rationale: "Minimalist, flexible, widely used, allows for custom structuring. TypeScript adds type safety."
+      selection_note: "User to choose one stack based on preference and experience."
+    database:
+      options:
+        - type: "SQLite"
+          rationale: "File-based, easy setup for local development, good for simpler applications or testing."
+        - type: "MySQL"
+          rationale: "Widely used, robust, feature-rich relational database."
+        - type: "PostgreSQL"
+          rationale: "Advanced, feature-rich, standards-compliant relational database."
+      orm: "A well-known ORM compatible with the chosen framework and database (e.g., Eloquent for Laravel, TypeORM/Sequelize/Prisma for Node.js stacks)."
+      selection_note: "User to choose one database. ORM choice depends on framework."
+    containerization:
+      tool: "Docker"
+      rationale: "Standard for containerization, ensures consistent environments, simplifies deployment."
+    api_documentation_tool: # (Bonus)
+      options:
+        - "Swagger/OpenAPI (e.g., using annotations or a spec file)"
+        - "Postman Collection"
+      rationale: "Standard ways to document and test REST APIs."
+  key_architectural_patterns:
+    - "RESTful API Design"
+    - "Layered Architecture (e.g., Controller-Service-Repository/DAO)"
+    - "Dependency Injection (especially with NestJS, AdonisJS, Laravel)"
+    - "Middleware for concerns like authentication, CORS, logging, request validation."
+    - "Object-Relational Mapper (ORM) for database interaction."
+  diagrams_and_visuals: # Placeholder for actual diagrams if they were to be embedded or linked
+    - diagram_id: "COMP-DIAG-01"
+      title: "High-Level Component Diagram"
+      description: "Shows major components like API Gateway (if any, conceptual), Application Logic, Database, Docker Container."
+      type: "Component Diagram"
+      format: "Conceptual (to be drawn if needed)"
+    - diagram_id: "SEQ-DIAG-01"
+      title: "Sequence Diagram: Create and Join Room"
+      description: "Illustrates the interaction flow for creating a room and a player joining it."
+      type: "Sequence Diagram"
+      format: "Conceptual (to be drawn if needed)"
+
+components_and_modules:
+  description: "Breakdown of the system into its primary functional components or modules."
+  component_list:
+    - component_id: "API.Auth"
+      name: "Authentication Module"
+      description: "Handles simulated or basic authentication (e.g., API key/user ID from header). Responsible for identifying the user making requests."
+      responsibilities:
+        - "Verify credentials/tokens from request headers."
+        - "Make user identity available to other modules."
+      technologies_used: ["Framework-specific auth middleware/guards"]
+      interfaces_provided: ["Middleware/guard for protecting routes"]
+      dependencies: []
+
+    - component_id: "API.RoomManagement"
+      name: "Room Management Module"
+      description: "Core module for all room-related operations: creation, listing, configuration, deletion."
+      responsibilities:
+        - "Handle `POST /api/rooms` (create room with title, visibility, player limits, approval, start mode)."
+        - "Generate unique, hard-to-guess room identifiers."
+        - "Handle `GET /api/rooms` (list public rooms and relevant private rooms)."
+        - "Handle `DELETE /api/rooms/{room}` (delete room)."
+        - "(Potentially) Handle `PUT /api/rooms/{room}` (update room settings - bonus)."
+      technologies_used: ["Chosen backend framework, ORM"]
+      interfaces_provided: ["REST API endpoints for room CRUD and listing"]
+      dependencies: ["API.Auth", "API.Database"]
+
+    - component_id: "API.PlayerInteraction"
+      name: "Player Interaction Module"
+      description: "Manages player actions within rooms, such as joining, leaving, and handling join requests."
+      responsibilities:
+        - "Handle `POST /api/rooms/{room}/join` (request to join)."
+        - "Handle `POST /api/rooms/{room}/pending-requests/{request}/respond` (approve/decline join request)."
+        - "Handle `POST /api/rooms/{room}/leave` (leave room)."
+      technologies_used: ["Chosen backend framework, ORM"]
+      interfaces_provided: ["REST API endpoints for player actions"]
+      dependencies: ["API.Auth", "API.RoomManagement", "API.Database"]
+
+    - component_id: "API.GameLifecycle"
+      name: "Game Lifecycle Module"
+      description: "Manages the starting of games within rooms."
+      responsibilities:
+        - "Handle `POST /api/rooms/{id}/start` (start game by host)."
+        - "Implement logic for auto-start if configured and conditions met."
+      technologies_used: ["Chosen backend framework, ORM"]
+      interfaces_provided: ["REST API endpoint for starting game"]
+      dependencies: ["API.Auth", "API.RoomManagement", "API.Database"]
+
+    - component_id: "API.Security"
+      name: "Security Infrastructure"
+      description: "Handles cross-cutting security concerns like CORS, input validation, and protection against common vulnerabilities."
+      responsibilities:
+        - "Implement fine-grained CORS policy."
+        - "Ensure protection against SQL injection (primarily via ORM usage and input sanitization)."
+        - "Validate incoming request data."
+        - "(Bonus) Implement trusted proxy mechanism for IP retrieval."
+        - "(Bonus) Implement rate limiting."
+      technologies_used: ["Framework middleware, validation libraries"]
+      interfaces_provided: ["Middleware, global filters/pipes"]
+      dependencies: []
+
+    - component_id: "API.Database"
+      name: "Database Abstraction Layer"
+      description: "Manages all interactions with the chosen database via an ORM."
+      responsibilities:
+        - "Define data models/entities (Room, User (if explicit), JoinRequest, etc.)."
+        - "Provide methods for CRUD operations on entities."
+        - "Handle database migrations (if applicable)."
+      technologies_used: ["Chosen ORM, Database (SQLite/MySQL/PostgreSQL)"]
+      interfaces_provided: ["Data access objects/repositories/services"]
+      dependencies: []
+
+    - component_id: "DevOps.Docker"
+      name: "Dockerization Setup"
+      description: "Configuration for building and running the application in a Docker container."
+      responsibilities:
+        - "Define multi-step Dockerfile."
+        - "Configure .dockerignore."
+        - "Manage environment variables for container configuration."
+        - "Ensure non-root execution within the container."
+      technologies_used: ["Docker"]
+      interfaces_provided:
+        ["Dockerfile, docker-compose.yml (optional for local dev)"]
+      dependencies: []
+
+    - component_id: "DevOps.Kubernetes" # (Bonus)
+      name: "Kubernetes Deployment Configuration"
+      description: "YAML files for deploying the application to a Kubernetes cluster."
+      responsibilities:
+        - "Create `deployment.yaml`."
+        - "Create `service.yaml`."
+        - "Create `configmap.yaml` and `secret.yaml` (with placeholders)."
+        - "(Optional) Plan for automated database migrations on update."
+      technologies_used: ["Kubernetes (YAML)"]
+      interfaces_provided: ["Kubernetes manifest files"]
+      dependencies: ["DevOps.Docker"]
+
+    - component_id: "Docs.APISpec" # (Bonus)
+      name: "API Specification Document"
+      description: "Formal documentation of the API (e.g., Swagger/OpenAPI)."
+      responsibilities:
+        - "Define all API endpoints, request/response schemas, and authentication methods."
+      technologies_used: ["Swagger Editor, OpenAPI tools, Postman"]
+      interfaces_provided: ["JSON/YAML spec file or Postman collection"]
+      dependencies:
+        ["API.RoomManagement", "API.PlayerInteraction", "API.GameLifecycle"]
+
+data_models_and_management:
+  data_entities_and_relationships:
+    - entity_name: "Room"
+      attributes:
+        - name: "id" # (e.g., UUID, auto-incrementing int)
+          type: "string or integer"
+          description: "Primary key, unique room identifier (random, hard to guess)."
+        - name: "title"
+          type: "string"
+          description: "Title of the room."
+        - name: "is_public"
+          type: "boolean"
+          description: "True if room is listed publicly, false if private."
+        - name: "approve_join_requests"
+          type: "boolean"
+          description: "True if host must approve join requests."
+        - name: "min_players"
+          type: "integer"
+          description: "Minimum number of players to start the game."
+        - name: "max_players"
+          type: "integer"
+          description: "Maximum number of players allowed in the room."
+        - name: "auto_start_on_full"
+          type: "boolean"
+          description: "True if game starts automatically when max_players is reached."
+        - name: "host_id"
+          type: "string or integer"
+          description: "Identifier of the user who created/hosts the room (simulated)."
+        - name: "status"
+          type: "enum (e.g., waiting, in_progress, finished, cancelled)"
+          description: "Current status of the room/game."
+        - name: "created_at"
+          type: "timestamp"
+        - name: "updated_at"
+          type: "timestamp"
+      relationships:
+        - type: "one-to-many"
+          target_entity: "PlayerInRoom"
+          description: "A room can have multiple players."
+        - type: "one-to-many"
+          target_entity: "JoinRequest"
+          description: "A room can have multiple pending join requests."
+        - type: "one-to-one" # or embedded if user concept is very simple
+          target_entity: "User" # (conceptual, if host is more than just an ID)
+          description: "A room has one host."
+
+    - entity_name: "User" # (Conceptual/Simulated)
+      attributes:
+        - name: "id"
+          type: "string or integer"
+          description: "Unique user identifier (simulated, e.g., from API key or header)."
+        - name: "display_name"
+          type: "string"
+          description: "User's display name (optional)."
+      relationships:
+        - type: "one-to-many"
+          target_entity: "Room"
+          description: "A user can host multiple rooms."
+        - type: "one-to-many"
+          target_entity: "PlayerInRoom"
+          description: "A user can be a player in multiple rooms."
+
+    - entity_name: "PlayerInRoom" # (Join Table or Entity)
+      attributes:
+        - name: "room_id"
+          type: "string or integer"
+          description: "Foreign key referencing Room."
+        - name: "user_id"
+          type: "string or integer"
+          description: "Foreign key referencing User."
+        - name: "joined_at"
+          type: "timestamp"
+      relationships:
+        - type: "many-to-one"
+          target_entity: "Room"
+        - type: "many-to-one"
+          target_entity: "User"
+
+    - entity_name: "JoinRequest"
+      attributes:
+        - name: "id"
+          type: "string or integer"
+          description: "Primary key, unique join request identifier."
+        - name: "room_id"
+          type: "string or integer"
+          description: "Foreign key referencing Room."
+        - name: "user_id"
+          type: "string or integer"
+          description: "Foreign key referencing User requesting to join."
+        - name: "status"
+          type: "enum (pending, approved, declined)"
+          description: "Status of the join request."
+        - name: "requested_at"
+          type: "timestamp"
+      relationships:
+        - type: "many-to-one"
+          target_entity: "Room"
+        - type: "many-to-one"
+          target_entity: "User"
+
+  database_schema_design: # Placeholder for ERD or detailed schema if needed
+    description: "The database schema will be implemented based on the entities above using the chosen ORM's migration tools or schema definition capabilities."
+    erd_link_or_image: "Conceptual (to be drawn if needed, or derived from ORM models)."
+  data_migration_strategy:
+    description: "For initial setup, ORM migrations (if supported by the chosen ORM/framework) will be used to create the schema. For this task, complex data migration scenarios are out of scope beyond initial schema creation."
+    tools:
+      ["ORM migration tools (e.g., Laravel Migrations, TypeORM Migrations)"]
+
+api_design_and_endpoints:
+  restful_api_conventions:
+    - "Use standard HTTP verbs (GET, POST, PUT, DELETE, PATCH) for corresponding actions."
+    - "Use plural nouns for resource collections (e.g., `/api/rooms`)."
+    - "Use HTTP status codes appropriately (200 OK, 201 Created, 204 No Content, 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 500 Internal Server Error)."
+    - "Use JSON for request and response bodies."
+    - "Support versioning if necessary (e.g., `/api/v1/rooms`), though likely not required for this task's scope."
+  endpoint_definitions:
+    - http_method: "POST"
+      path: "/api/rooms"
+      description: "Create a new game room. User making the request becomes the host."
+      request_body_schema:
+        type: "object"
+        properties:
+          title: { type: "string", description: "Room title" }
+          is_public: { type: "boolean", default: true }
+          approve_join_requests: { type: "boolean", default: false }
+          min_players: { type: "integer", minimum: 2 }
+          max_players: { type: "integer", minimum: 2 }
+          auto_start_on_full: { type: "boolean", default: false }
+        required: ["title", "min_players", "max_players"]
+      response_schema:
+        "201 Created": { $ref: "#/components/schemas/Room" }
+        "400 Bad Request": { $ref: "#/components/schemas/ErrorResponse" }
+      authentication_required: true
+
+    - http_method: "GET"
+      path: "/api/rooms"
+      description: "List waiting rooms. Returns public rooms and private rooms where the authenticated user is a host or player."
+      query_parameters:
+        - name: "visibility"
+          type: "string"
+          enum: ["public", "private", "all"]
+          description: "Filter rooms by visibility (relevant to user's access)."
+        - name: "status"
+          type: "string"
+          enum: ["waiting", "in_progress"]
+          description: "Filter rooms by status."
+      response_schema:
+        "200 OK":
+          { type: "array", items: { $ref: "#/components/schemas/RoomSummary" } }
+      authentication_required: true # To determine private room visibility
+
+    - http_method: "POST"
+      path: "/api/rooms/{roomId}/join"
+      description: "Request to join a specific room. If room is public and doesn't require approval, player joins directly. If private or requires approval, a join request is created."
+      path_parameters:
+        - name: "roomId"
+          type: "string"
+          description: "ID of the room to join."
+      response_schema:
+        "200 OK":
+          {
+            description: "Successfully joined or request submitted.",
+            properties:
+              {
+                message: { type: "string" },
+                room: { $ref: "#/components/schemas/Room" },
+              },
+          }
+        "400 Bad Request": { $ref: "#/components/schemas/ErrorResponse" } # e.g., room full, already in room
+        "403 Forbidden": { $ref: "#/components/schemas/ErrorResponse" } # e.g., trying to join private room without invite/approval mechanism
+        "404 Not Found": { $ref: "#/components/schemas/ErrorResponse" }
+      authentication_required: true
+
+    - http_method: "POST"
+      path: "/api/rooms/{roomId}/pending-requests/{requestId}/respond"
+      description: "Host approves or declines a pending join request for their room."
+      path_parameters:
+        - name: "roomId"
+          type: "string"
+          description: "ID of the room."
+        - name: "requestId"
+          type: "string"
+          description: "ID of the join request."
+      request_body_schema:
+        type: "object"
+        properties:
+          action: { type: "string", enum: ["approve", "decline"] }
+        required: ["action"]
+      response_schema:
+        "200 OK": { $ref: "#/components/schemas/JoinRequest" }
+        "403 Forbidden": { $ref: "#/components/schemas/ErrorResponse" } # Not host
+        "404 Not Found": { $ref: "#/components/schemas/ErrorResponse" }
+      authentication_required: true # Host only
+
+    - http_method: "POST"
+      path: "/api/rooms/{roomId}/leave"
+      description: "Player leaves a room they are currently in. If host leaves, room may be destroyed or host reassigned (simplification: room might be destroyed)."
+      path_parameters:
+        - name: "roomId"
+          type: "string"
+          description: "ID of the room to leave."
+      response_schema:
+        "204 No Content": {}
+        "404 Not Found": { $ref: "#/components/schemas/ErrorResponse" }
+      authentication_required: true
+
+    - http_method: "POST"
+      path: "/api/rooms/{roomId}/start"
+      description: "Host starts the game if all requirements are met (e.g., min players)."
+      path_parameters:
+        - name: "roomId"
+          type: "string"
+          description: "ID of the room to start."
+      response_schema:
+        "200 OK":
+          {
+            properties:
+              {
+                message: { type: "string" },
+                room: { $ref: "#/components/schemas/Room" },
+              },
+          }
+        "400 Bad Request": { $ref: "#/components/schemas/ErrorResponse" } # e.g., not enough players
+        "403 Forbidden": { $ref: "#/components/schemas/ErrorResponse" } # Not host
+        "404 Not Found": { $ref: "#/components/schemas/ErrorResponse" }
+      authentication_required: true # Host only
+
+    - http_method: "DELETE"
+      path: "/api/rooms/{roomId}"
+      description: "Host deletes a room they created."
+      path_parameters:
+        - name: "roomId"
+          type: "string"
+          description: "ID of the room to delete."
+      response_schema:
+        "204 No Content": {}
+        "403 Forbidden": { $ref: "#/components/schemas/ErrorResponse" } # Not host
+        "404 Not Found": { $ref: "#/components/schemas/ErrorResponse" }
+      authentication_required: true # Host only
+
+  # Placeholder for common schema components (used with $ref above)
+  common_schemas_for_api: # (Conceptual, would be part of OpenAPI spec)
+    Room:
+      type: "object"
+      properties:
+        id: { type: "string" }
+        title: { type: "string" }
+        is_public: { type: "boolean" }
+        approve_join_requests: { type: "boolean" }
+        min_players: { type: "integer" }
+        max_players: { type: "integer" }
+        current_players_count: { type: "integer" }
+        auto_start_on_full: { type: "boolean" }
+        host_id: { type: "string" }
+        status: { type: "string", enum: ["waiting", "in_progress", "finished"] }
+        players:
+          { type: "array", items: { $ref: "#/components/schemas/Player" } }
+        created_at: { type: "string", format: "date-time" }
+        updated_at: { type: "string", format: "date-time" }
+    RoomSummary:
+      type: "object"
+      properties:
+        id: { type: "string" }
+        title: { type: "string" }
+        is_public: { type: "boolean" }
+        current_players_count: { type: "integer" }
+        max_players: { type: "integer" }
+        status: { type: "string" }
+    Player:
+      type: "object"
+      properties:
+        user_id: { type: "string" }
+        display_name: { type: "string" }
+    JoinRequest:
+      type: "object"
+      properties:
+        id: { type: "string" }
+        room_id: { type: "string" }
+        user_id: { type: "string" }
+        user_display_name: { type: "string" }
+        status: { type: "string", enum: ["pending", "approved", "declined"] }
+        requested_at: { type: "string", format: "date-time" }
+    ErrorResponse:
+      type: "object"
+      properties:
+        message: { type: "string" }
+        details: { type: "object" } # Optional additional error details
+
+security_considerations:
+  authentication_and_authorization:
+    strategy: "Simulated or basic authentication. E.g., a static API key or a user ID passed in a custom header (e.g., `X-User-ID`). Authorization will be based on this user ID (e.g., only host can start game or delete room)."
+    implementation_notes: "For this task, full OAuth2 or JWT is out of scope. Focus on a simple mechanism to identify the 'user' and differentiate host actions."
+  data_security_and_privacy:
+    - "Protect against SQL injection by consistently using ORM features and parameterized queries."
+    - "No sensitive data (passwords, PII beyond a simulated user ID) will be stored."
+    - "Ensure no secrets (API keys, database credentials) are hardcoded or committed to the repository. Use environment variables."
+  input_validation:
+    - "All incoming data (request bodies, query parameters, path parameters) must be validated for type, format, and range where applicable."
+    - "Use framework-provided validation tools or libraries (e.g., class-validator in NestJS, Laravel validation)."
+  cors_policy:
+    - "Implement a fine-grained CORS policy. Do not use wildcard `*` for allowed origins in a production-like setup. For development, specific local origins can be allowed. For the task, this might mean allowing a specific port or a configurable set of origins via environment variables."
+  rate_limiting: # (Bonus)
+    - "Consider implementing rate limiting on sensitive or expensive operations like room creation or join requests to prevent abuse."
+    - "Use framework middleware or a library like `express-rate-limit`."
+  error_handling_and_logging:
+    - "Implement consistent error responses (e.g., JSON with a message field)."
+    - "Log critical errors and important application events. Avoid logging sensitive data."
+  dependency_management:
+    - "Keep dependencies up-to-date and regularly scan for vulnerabilities (e.g., using `npm audit` or `composer audit`)."
+
+deployment_and_operations:
+  containerization_strategy:
+    dockerfile_details:
+      - "Use a multi-stage Dockerfile: one stage for building (e.g., compiling TypeScript, installing dev dependencies) and a final, smaller stage for running the application with only production dependencies."
+      - "Base images should be official and secure (e.g., `node:18-alpine` or `php:8.2-fpm-alpine`)."
+      - "Copy only necessary files into the container."
+      - "Run the application as a non-root user."
+      - "Expose the application port (e.g., 3000 or 8000)."
+    docker_ignore_configuration:
+      - "`.dockerignore` should exclude `node_modules`, `.git`, local environment files (`.env`), logs, etc., to optimize build context and security."
+    environment_variables:
+      - "All configurations (database credentials, API keys, port, environment (dev/prod)) must be managed via environment variables."
+      - "Provide a `.env.example` file."
+  kubernetes_deployment_yaml: # (Bonus)
+    deployment_yaml:
+      description: "Defines the desired state for deploying the application pods (replicas, container image, ports, environment variables from ConfigMap/Secret)."
+    service_yaml:
+      description: "Exposes the application pods as a network service (e.g., LoadBalancer or ClusterIP)."
+    configmap_yaml:
+      description: "Manages non-sensitive configuration data as key-value pairs."
+    secret_yaml:
+      description: "Manages sensitive data like API keys or database passwords (use placeholders for actual secrets)."
+    migration_strategy_on_update: # (Optional Bonus)
+      description: "Consider how database migrations would be run during a deployment update (e.g., Kubernetes Job as part of a Helm chart, or an init container)."
+  helm_chart_definition: # (Bonus)
+    description: "(If implemented) A Helm chart to package and manage the Kubernetes deployment."
+  monitoring_and_logging_setup:
+    logging: "Application should log to stdout/stderr to be easily captured by container orchestration platforms."
+    monitoring: "(Out of scope for this task, but in a real system, would include metrics for request rates, error rates, latency, resource usage.)"
+  database_setup_and_migrations:
+    - "Instructions for setting up the chosen database locally (e.g., using Docker Compose for MySQL/PostgreSQL, or just a file for SQLite)."
+    - "Instructions for running ORM migrations to create the schema."
+
+testing_strategy:
+  unit_tests: # (Bonus)
+    scope: "Focus on testing individual functions, methods, or classes, especially business logic in services."
+    tools: ["Jest/Mocha/Chai for Node.js", "PHPUnit for PHP"]
+    examples:
+      - "Test room creation logic with various inputs."
+      - "Test player joining conditions (e.g., room full, approval required)."
+  integration_tests: # (Bonus)
+    scope: "Test interactions between components, particularly API endpoints hitting a test database."
+    tools:
+      [
+        "Supertest for Node.js Express/NestJS",
+        "Laravel's HTTP testing utilities",
+      ]
+    examples:
+      - "Test the full flow of creating a room, joining it, and starting the game via API calls."
+  end_to_end_tests: "(Out of scope for this task due to complexity)."
+  test_coverage_goals: "(Bonus) Aim for basic coverage of critical paths."
+
+project_plan_and_execution:
+  milestones_and_timeline:
+    - milestone_id: "M1"
+      name: "Project Setup & Core API Structure"
+      description: "Choose stack, setup project, ORM, basic models, and initial API routes for room creation and listing."
+      estimated_completion: "Day 1, Hours 1-4"
+      deliverables:
+        ["Working project skeleton", "Basic Room CRUD (Create, List)"]
+    - milestone_id: "M2"
+      name: "Implement Core Room & Player Interactions"
+      description: "Implement join, leave, approve/decline, start game, delete room functionalities."
+      estimated_completion: "Day 1, Hours 5-12"
+      deliverables: ["All core API endpoints functional"]
+    - milestone_id: "M3"
+      name: "Security & Dockerization"
+      description: "Implement authentication, CORS, SQLi protection. Create Dockerfile and .dockerignore."
+      estimated_completion: "Day 2, Hours 1-5"
+      deliverables: ["Secure API layer", "Runnable Docker container"]
+    - milestone_id: "M4"
+      name: "Documentation & Review"
+      description: "Write comprehensive README. Review all code and deliverables against requirements."
+      estimated_completion: "Day 2, Hours 6-8"
+      deliverables: ["Complete README.md", "Final codebase for submission"]
+    - milestone_id: "M5-BONUS"
+      name: "Bonus Features Implementation"
+      description: "Work on selected bonus features (Kubernetes, API docs, tests, etc.) if time allows."
+      estimated_completion: "Day 2, as time permits"
+      deliverables: ["Implemented bonus features"]
+  key_tasks_breakdown: "(Refer to MDML Agenda `plan/waiting-room-manager-api-agenda.mdml.yml` for detailed task breakdown)"
+  resource_allocation: "1 Backend Engineer (the interviewee)."
+  risk_management:
+    potential_risks:
+      - id: "RISK-001"
+        description: "Underestimation of time for a chosen technology stack if unfamiliar."
+        mitigation: "Prioritize core features. Stick to familiar aspects of the stack where possible."
+      - id: "RISK-002"
+        description: "Complexity in setting up Docker or Kubernetes correctly."
+        mitigation: "Follow official documentation closely. Start with simpler Docker setup first."
+      - id: "RISK-003"
+        description: "Scope creep if attempting too many bonus features before core is solid."
+        mitigation: "Strictly prioritize core requirements. Allocate specific time for bonus features if core is completed early."
+
+documentation_plan:
+  readme_structure:
+    - "Project Title and Overview"
+    - "Technology Stack Chosen"
+    - "Prerequisites (local development)"
+    - "Setup Instructions (Local Development)":
+        - "Cloning the repository"
+        - "Installing dependencies"
+        - "Environment variable setup (`.env` from `.env.example`)"
+        - "Database setup and migrations"
+        - "Running the application locally"
+    - "API Description & Usage":
+        - "Base URL"
+        - "Authentication method"
+        - "Detailed list of endpoints (method, path, description, request body, response examples)"
+    - "Containerized Setup (Docker)":
+        - "Building the Docker image"
+        - "Running the application using Docker"
+        - "Accessing the application"
+    - "Deployment Steps (Docker/Kubernetes - if bonus K8s is done)"
+    - "Database Migration Instructions (if applicable beyond initial setup)"
+    - "Testing (if bonus tests are done)":
+        - "How to run tests"
+    - "Any other important notes/assumptions made"
+  api_documentation_approach: "(Bonus) Use Swagger/OpenAPI annotations within the code (if framework supports, e.g., NestJS) or a separate OpenAPI YAML/JSON file. Alternatively, a Postman collection."
+  code_commenting_strategy: "Comment complex logic, public API methods, and non-obvious decisions. Adhere to framework-specific documentation block standards (e.g., PHPDoc, JSDoc/TSDoc)."
+
+glossary_of_terms:
+  - term: "WRM API"
+    definition: "Waiting Room Manager API - the system being built."
+  - term: "Room Host"
+    definition: "The user who creates and typically manages a game room."
+  - term: "CORS"
+    definition: "Cross-Origin Resource Sharing - a browser security feature that restricts cross-origin HTTP requests."
+  - term: "ORM"
+    definition: "Object-Relational Mapper - a programming technique for converting data between incompatible type systems using object-oriented programming languages."
+  - term: "Dockerfile"
+    definition: "A text document that contains all the commands a user could call on the command line to assemble an image."
+  - term: "Kubernetes (K8s)"
+    definition: "An open-source system for automating deployment, scaling, and management of containerized applications."
+
+appendices_and_references:
+  external_references:
+    - title: "Laravel Documentation"
+      url: "https://laravel.com/docs"
+    - title: "NestJS Documentation"
+      url: "https://docs.nestjs.com"
+    - title: "AdonisJS Documentation"
+      url: "https://docs.adonisjs.com/guides/introduction"
+    - title: "Express.js Documentation"
+      url: "https://expressjs.com/"
+    - title: "Docker Documentation"
+      url: "https://docs.docker.com/"
+    - title: "Kubernetes Documentation"
+      url: "https://kubernetes.io/docs/"
+    - title: "OpenAPI Specification"
+      url: "https://swagger.io/specification/"
+  internal_references:
+    - document_id: "WRM-REQ-DOC"
+      description: "Main requirements document: `plan/waiting-room-manager-api.md`"
+    - document_id: "WRM-AGENDA-MDML"
+      description: "MDML Agenda: `plan/waiting-room-manager-api-agenda.mdml.yml`"

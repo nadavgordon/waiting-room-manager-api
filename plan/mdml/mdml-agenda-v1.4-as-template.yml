@@ -1,0 +1,368 @@
+mdml_version: "Agenda-1.4-as-template"
+document_type: AgendaSpecificationAndTemplate # Dual role: schema and template
+
+# --- MDML Agenda Specification (v1.4) ---
+# PURPOSE: Defines schema for MDML Agenda (v1.4) and serves as a template.
+# USAGE AS TEMPLATE: Fill `[...]` placeholders; adapt/remove examples.
+# Relies on clear structure, not custom YAML tags. Type declarations minimized.
+
+# --- Clean Instance Skeleton & AI AGENT NOTE ---
+#
+# AI AGENT NOTE:
+# When generating an MDML Agenda *instance*, use the "Clean Instance Skeleton" below.
+# Populate values directly. DO NOT replicate schema fields (like `description`,
+# `example_instance_value`) from `agenda_definition` into the *instance*.
+# `agenda_definition` is for schema understanding, not direct instance replication.
+#
+# Clean Instance Skeleton:
+# ```yaml
+# mdml_version: "Agenda-1.4" # Instance version
+# document_type: AgendaInstance
+#
+# agenda_metadata:
+#   name: "[Agenda Name]"
+#   version: "[Instance Version]"
+#   goal: "[Primary Goal]"
+#   creation_date: "[YYYY-MM-DD]"
+#   last_updated_date: "[YYYY-MM-DD]"
+#   authors:
+#     - name: "[Author Name]"
+#       role: "[Author Role]"
+#   status: "[Status (e.g., draft, active)]"
+#   scope_summary: "[Scope Summary]"
+#   target_audience: "[Target Audience]"
+#   estimated_duration: "[Estimated Duration]"
+#   related_documents:
+#     - doc_id: "[DocID-001]"
+#       description: "[Doc Description]"
+#       location: "[path/or/url]"
+#
+# executor_persona:
+#   role: "[Executor Role]"
+#   expertise_level: "[Expertise Level]"
+#   responsibilities:
+#     - "[Responsibility 1]"
+#   communication_style: "[Communication Style]"
+#   tools_and_technologies:
+#     - "[Tool/Tech 1]"
+#
+# task_context:
+#   project_background: "[Project Background]"
+#   problem_statement: "[Problem Statement]"
+#   user_stories_or_scenarios:
+#     - story_id: "[US-001]"
+#       as_a: "[User Role]"
+#       i_want_to: "[Goal]"
+#       so_that: "[Benefit]"
+#   business_value_or_impact: "[Business Value/Impact]"
+#
+# task_definition:
+#   overall_task_description: "[Overall Task Description]"
+#   key_deliverables:
+#     - "[Deliverable 1]"
+#   instructions:
+#     preliminary_steps:
+#       - "[Preliminary Step 1]"
+#     core_steps:
+#       - step_id: "[StepID-001]"
+#         description: "[Step Description]"
+#         sub_steps:
+#           - "[Sub-step 1.1]"
+#     post_completion_steps:
+#       - "[Post-completion Step 1]"
+#   constraints_and_assumptions:
+#     constraints:
+#       - "[Constraint 1]"
+#     assumptions:
+#       - "[Assumption 1]"
+#   success_metrics_or_evaluation_criteria:
+#     - "[Criterion/Metric 1]"
+#   acceptance_criteria:
+#     - "[Acceptance Criterion 1]"
+#
+# output_specification:
+#   expected_outputs:
+#     - output_id: "[OutputID-001]"
+#       description: "[Output Description]"
+#       format_or_type: "[Format/Type (e.g., Git Repo, Docker Image)]"
+#       delivery_method: "[Delivery Method]"
+#   quality_standards_for_output:
+#     - "[Quality Standard 1]"
+#
+# glossary_and_definitions: # Optional
+#   - term: "[Term 1]"
+#     definition: "[Definition 1]"
+#
+# few_shot_examples: # Optional
+#   - example_id: "[FS-001]"
+#     description: "[Example Description]"
+#     input:
+#       scenario: "[Example Input Scenario]"
+#     expected_output:
+#       result: "[Example Output Result]"
+# ```
+#
+# --- Top-Level Agenda Object Definition (Schema Details Follow) ---
+# An Agenda instance: single YAML doc with these top-level keys.
+# TEMPLATE HINT: Use 'Clean Instance Skeleton' as primary structural guide.
+# Example:
+# agenda_metadata:
+#   name: "My Agenda"
+#   goal: "Achieve X."
+# # ... other metadata fields ...
+
+agenda_definition: # Formal schema definition.
+  properties:
+    # --- 1. Core Agenda Properties ---
+    agenda_metadata:
+      description: (Required Block) Metadata for THIS Agenda instance.
+      required: [name, goal]
+      properties:
+        name:
+          description: (Required) Short, descriptive name for this Agenda.
+          example_instance_value: "Refactor User Auth Module"
+        version:
+          description: Version of this Agenda instance (e.g., 1.0, 2.1.3).
+          example_instance_value: "1.0"
+        goal:
+          description: (Required) Primary objective/outcome of this Agenda.
+          example_instance_value: "To build a secure & scalable user authentication service."
+        creation_date:
+          description: Creation date (YYYY-MM-DD).
+          example_instance_value: "2024-07-15"
+        last_updated_date:
+          description: Last update date (YYYY-MM-DD).
+          example_instance_value: "2024-07-16"
+        authors:
+          description: Individuals/teams responsible. List of objects.
+          items:
+            properties:
+              name: { description: "Author's name" }
+              role: { description: "Author's role (e.g., Project Lead)" }
+          example_instance_value:
+            - name: "AI Assistant"
+              role: "MDML Author"
+        status:
+          description: Current status (e.g., draft, active, completed, on-hold).
+          example_instance_value: "draft"
+        scope_summary:
+          description: Brief summary of what's in/out of scope.
+          example_instance_value: "In scope: Core API, basic tests. Out: UI, advanced features."
+        target_audience:
+          description: Primary audience (e.g., dev team, project manager).
+          example_instance_value: "Development Team, Product Owner"
+        estimated_duration:
+          description: Estimated completion time (e.g., 2 weeks, 3 sprints).
+          example_instance_value: "3 Sprints (6 weeks)"
+        related_documents:
+          description: Links/references to other relevant documents. List of objects.
+          items:
+            properties:
+              doc_id: { description: "Identifier for related document" }
+              description: { description: "Brief description of document" }
+              location: { description: "URL or path to document" }
+          example_instance_value:
+            - doc_id: "PROJ-CHARTER-001"
+              description: "Project Charter defining overall goals."
+              location: "docs/project_charter_v1.pdf"
+
+    executor_persona:
+      description: |-
+        (Optional Block) Defines the persona the executor (e.g., an LLM) should adopt.
+        TEMPLATE HINT: Helps tailor the execution style and responses.
+      properties:
+        role:
+          description: Primary role the executor should adopt (e.g., Senior Software Engineer).
+          example_instance_value: "Senior Software Engineer"
+        expertise_level:
+          description: Expected expertise (e.g., expert, intermediate, novice in relevant domains).
+          example_instance_value: "Expert in Python, Intermediate in Cloud Deployments"
+        responsibilities:
+          description: Key responsibilities for the executor in this Agenda. List of strings.
+          example_instance_value:
+            - "Write clean, maintainable, and well-tested code."
+            - "Follow security best practices."
+        communication_style:
+          description: Preferred style (e.g., concise, detailed, formal, informal with emojis).
+          example_instance_value: "Concise and professional, with code examples where appropriate."
+        tools_and_technologies:
+          description: Specific tools/tech the executor should be proficient with or prioritize. List of strings.
+          example_instance_value:
+            - "Python 3.9+"
+            - "Git for version control"
+            - "Pytest for unit testing"
+
+    task_context:
+      description: |-
+        (Required Block) Background and context for the task.
+        TEMPLATE HINT: Provides the 'why' and 'what for' of the Agenda.
+      required: [project_background, problem_statement]
+      properties:
+        project_background:
+          description: (Required) Overview of the project/initiative this Agenda supports.
+          example_instance_value: "The company is launching a new e-commerce platform (Project Phoenix)."
+        problem_statement:
+          description: (Required) Specific problem or need this Agenda addresses.
+          example_instance_value: "Currently, user session management is insecure and not scalable."
+        user_stories_or_scenarios:
+          description: Relevant user stories or scenarios. List of objects.
+          items:
+            properties:
+              story_id: { description: "Unique ID for the story/scenario" }
+              as_a: { description: "User role (e.g., Registered User)" }
+              i_want_to: { description: "Goal/desire of the user" }
+              so_that: { description: "Benefit/reason for the goal" }
+          example_instance_value:
+            - story_id: "US-AUTH-001"
+              as_a: "New User"
+              i_want_to: "Register for an account securely"
+              so_that: "I can access personalized features."
+        business_value_or_impact:
+          description: Business value or impact of successfully completing this Agenda.
+          example_instance_value: "Improved security, better user experience, and readiness for future growth."
+
+    task_definition:
+      description: |-
+        (Required Block) Detailed breakdown of the task.
+        TEMPLATE HINT: The core 'how-to' of the Agenda.
+      required: [overall_task_description, key_deliverables, instructions]
+      properties:
+        overall_task_description:
+          description: (Required) Comprehensive description of the main task.
+          example_instance_value: "Develop and integrate a new JWT-based authentication microservice."
+        key_deliverables:
+          description: (Required) Main outputs/artifacts expected. List of strings.
+          example_instance_value:
+            - "Fully functional authentication API."
+            - "Unit and integration test suite (80%+ coverage)."
+        instructions:
+          description: (Required) Step-by-step instructions.
+          required: [core_steps]
+          properties:
+            preliminary_steps:
+              description: Steps to perform before core work (e.g., setup, research). List of strings.
+              example_instance_value:
+                - "Review existing identity provider documentation."
+            core_steps:
+              description: (Required) Main execution steps. List of objects.
+              items:
+                properties:
+                  step_id: { description: "Identifier for the step" }
+                  description:
+                    { description: "Detailed description of the step" }
+                  sub_steps:
+                    {
+                      type: array,
+                      items: { type: string },
+                      description: "Finer-grained actions",
+                    }
+              example_instance_value:
+                - step_id: "API-IMPL-01"
+                  description: "Implement token generation endpoint."
+                  sub_steps:
+                    [
+                      "Define request/response models.",
+                      "Write business logic.",
+                      "Add unit tests.",
+                    ]
+            post_completion_steps:
+              description: Steps after core work (e.g., cleanup, documentation). List of strings.
+              example_instance_value:
+                - "Submit pull request for review."
+                - "Update API documentation."
+        constraints_and_assumptions:
+          description: Limitations and assumptions.
+          properties:
+            constraints:
+              description: Factors limiting options or approach. List of strings.
+              example_instance_value:
+                - "Must use Python 3.9."
+                - "Deployment target is AWS Lambda."
+            assumptions:
+              description: Beliefs taken as true for planning. List of strings.
+              example_instance_value:
+                - "Existing user database schema is compatible."
+        success_metrics_or_evaluation_criteria:
+          description: How success will be measured. List of strings.
+          example_instance_value:
+            - "API response time < 200ms under normal load."
+            - "Zero critical vulnerabilities reported by security scan."
+        acceptance_criteria:
+          description: Conditions for considering the task/deliverables complete. List of strings.
+          example_instance_value:
+            - "All specified API endpoints are functional as per OpenAPI spec."
+            - "Code review passed with no major issues."
+
+    output_specification:
+      description: |-
+        (Required Block) Defines expected outputs and quality standards.
+        TEMPLATE HINT: Clarifies what 'done' looks like for deliverables.
+      required: [expected_outputs]
+      properties:
+        expected_outputs:
+          description: (Required) Detailed list of output artifacts. List of objects.
+          items:
+            properties:
+              output_id: { description: "Identifier for the output" }
+              description: { description: "Description of the output artifact" }
+              format_or_type:
+                { description: "e.g., Git Repo, Docker Image, PDF, YAML file" }
+              delivery_method:
+                {
+                  description: "How output delivered (e.g., URL to repo, file path)",
+                }
+          example_instance_value:
+            - output_id: "SRC-CODE"
+              description: "Source code for the authentication API."
+              format_or_type: "Git Repository"
+              delivery_method: "URL to GitHub repository"
+        quality_standards_for_output:
+          description: Specific quality benchmarks for outputs. List of strings.
+          example_instance_value:
+            - "Code adheres to PEP 8 style guide."
+            - "All tests pass in CI/CD pipeline."
+
+    glossary_and_definitions: # Optional
+      description: |-
+        Definitions of terms, acronyms, or concepts specific to this Agenda.
+        TEMPLATE HINT: Useful for clarity, especially with domain-specific language.
+      items:
+        properties:
+          term: { description: "The term to define" }
+          definition: { description: "The definition of the term" }
+        required: [term, definition]
+      example_instance_value:
+        - term: "JWT"
+          definition: "JSON Web Token, an open standard (RFC 7519) for securely transmitting information between parties as a JSON object."
+
+    few_shot_examples: # Optional
+      description: |-
+        Examples to guide LLM for specific sub-tasks or illustrate desired behavior.
+        TEMPLATE HINT: Useful for complex tasks where showing is clearer than describing.
+      items:
+        properties:
+          example_id: { description: "Unique ID for this example" }
+          description: { description: "What this example illustrates" }
+          input: { description: "Example input for a sub-task/scenario" }
+          expected_output: { description: "Corresponding expected output" }
+        required: [example_id, input, expected_output]
+      example_instance_value:
+        - example_id: "FS-TOKEN-ERR"
+          description: "Generating an error for an expired token."
+          input:
+            scenario: "Token verification with expired token."
+            token_details:
+              { "user_id": "user123", "exp": "2023-01-01T00:00:00Z" }
+            current_time: "2024-01-01T00:00:00Z"
+          expected_output:
+            action: "Raise TokenExpiredError"
+            log_message: "Token for user123 expired at 2023-01-01T00:00:00Z."
+        - example_id: "FS-DOCSTRING"
+          description: "Docstring for a public function."
+          input:
+            function_signature: "def get_user_profile(user_id: str) -> dict:"
+          expected_output:
+            docstring: |
+              """Fetches user profile. Args: user_id. Returns: profile dict. Raises: UserNotFoundError."""
+
+# --- End of MDML Agenda Specification (v1.4 - As Template) ---
