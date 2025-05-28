@@ -1,0 +1,182 @@
+mdml_version: "Agenda-1.4"
+document_type: AgendaInstance
+
+agenda_metadata:
+  name: "Waiting Room Manager API - Improvement Agenda"
+  version: "1.0"
+  goal: "To enhance the existing Waiting Room Manager API with authentication, improved error handling, better database design, scalability features, comprehensive testing, and robust DevOps practices."
+  creation_date: "2025-05-28"
+  last_updated_date: "2025-05-28"
+  authors:
+    - name: "AI Assistant Cascade"
+      role: "MDML Author"
+  status: "active"
+  scope_summary: "In scope: Implementing authentication, refining database schema, improving error handling, adding real-time capabilities (WebSockets), enhancing testing, and preparing for production deployment with Docker and Kubernetes. Out of scope: UI development, advanced game logic."
+  target_audience: "Backend Engineer, DevOps Engineer"
+  estimated_duration: "5-7 days"
+  related_documents:
+    - doc_id: "WRM-API-CRITIQUE"
+      description: "Critical review of the Waiting Room Manager API codebase."
+      location: "/run/media/nadavg/spinner/Projects/waiting-room-manager-api/critical-review.md"
+    - doc_id: "WRM-API-BLUEPRINT"
+      description: "Waiting Room Manager API Blueprint."
+      location: "plan/waiting-room-manager-api-blueprint.mdml.yml"
+
+executor_persona:
+  role: "Backend Software Developer & DevOps Engineer"
+  expertise_level: "Mid-level to Senior, proficient in NestJS, TypeORM, Docker, and Kubernetes."
+  responsibilities:
+    - "Implement API enhancements as specified."
+    - "Ensure code quality, security, and maintainability."
+    - "Develop and integrate real-time features."
+    - "Create and refine Docker and Kubernetes configurations."
+    - "Write comprehensive tests."
+  communication_style: "Clear, concise, with proactive updates on progress and potential issues."
+  tools_and_technologies:
+    - "Node.js (NestJS)"
+    - "TypeORM"
+    - "PostgreSQL (or other relational DB)"
+    - "Redis"
+    - "Docker"
+    - "Kubernetes"
+    - "Jest (for testing)"
+    - "Swagger/OpenAPI"
+
+task_context:
+  project_background: "The existing Waiting Room Manager API provides basic room management functionality. This agenda aims to elevate its robustness, security, and scalability to production-ready standards based on a recent critical review."
+  problem_statement: "The current API lacks proper authentication, has inconsistent error handling, uses a simplified database schema for relations, and is not fully optimized for scalability or real-time interactions. DevOps configurations are also incomplete."
+  user_stories_or_scenarios:
+    - story_id: "US-AUTH-001"
+      as_a: "Game Developer"
+      i_want_to: "secure my API endpoints with proper authentication"
+      so_that: "only authorized users can perform actions like creating or starting rooms."
+    - story_id: "US-DB-001"
+      as_a: "Game Developer"
+      i_want_to: "have a robust database schema for player-room relationships"
+      so_that: "data integrity is maintained and complex queries are efficient."
+    - story_id: "US-REALTIME-001"
+      as_a: "Game Player"
+      i_want_to: "receive real-time updates on room status and player changes"
+      so_that: "I don't have to constantly refresh the room list."
+    - story_id: "US-OPS-001"
+      as_a: "DevOps Engineer"
+      i_want_to: "easily deploy and scale the API using Docker and Kubernetes"
+      so_that: "I can manage the application lifecycle efficiently."
+  business_value_or_impact: "Implementing these improvements will significantly increase the API's reliability, security, and user experience, making it suitable for production environments and reducing operational overhead."
+
+task_definition:
+  overall_task_description: "Implement the recommended enhancements to the Waiting Room Manager API, covering authentication, database schema refinement, error handling, real-time features, testing, and DevOps configurations."
+  instructions:
+    - task_id: "API-ENH-01"
+      description: "Implement User Authentication and Authorization."
+      steps:
+        - "Define User entity and integrate with TypeORM."
+        - "Implement JWT-based authentication (login, registration, token validation)."
+        - "Protect relevant API endpoints using NestJS Guards and custom decorators for user context."
+        - "Replace `hostId` in DTOs with authenticated user context."
+      evaluation_criteria:
+        - "All sensitive endpoints are protected."
+        - "Users can register, log in, and access protected resources with valid tokens."
+        - "Authorization logic (e.g., only host can start/delete room) is enforced via guards/decorators."
+
+    - task_id: "API-ENH-02"
+      description: "Refine Database Schema and Relations."
+      steps:
+        - "Replace `simple-array` for `playerIds` and `pendingPlayerRequests` with proper Many-to-Many relations to a `User` entity."
+        - "Establish a One-to-Many relation between `User` (host) and `Room`."
+        - "Implement TypeORM migrations for schema changes."
+      evaluation_criteria:
+        - "Database schema reflects proper relational design."
+        - "Data integrity is maintained for player-room associations."
+        - "Migrations can be run successfully to update the database."
+
+    - task_id: "API-ENH-03"
+      description: "Improve Error Handling and Validation."
+      steps:
+        - "Implement a global exception filter for consistent error responses."
+        - "Enhance DTO validation with more specific rules and custom validation pipes where necessary."
+        - "Ensure all API endpoints return standardized error formats."
+      evaluation_criteria:
+        - "API responses for errors are consistent across all endpoints."
+        - "Validation errors are clear and informative."
+        - "Unhandled exceptions are caught and returned gracefully."
+
+    - task_id: "API-ENH-04"
+      description: "Implement Real-time Updates with WebSockets."
+      steps:
+        - "Integrate NestJS WebSockets (e.g., using `@nestjs/platform-socket.io`)."
+        - "Emit real-time events for room status changes (e.g., `status` updated, `playerIds` change, `pendingPlayerRequests` change)."
+        - "Consider a basic client-side example to demonstrate WebSocket functionality."
+      evaluation_criteria:
+        - "Clients receive real-time updates for relevant room events."
+        - "WebSocket connections are stable."
+
+    - task_id: "API-ENH-05"
+      description: "Enhance Testing Coverage."
+      steps:
+        - "Write unit tests for `WaitingRoomService` methods, covering all business logic and edge cases."
+        - "Write integration tests for `WaitingRoomController` endpoints, simulating API calls."
+        - "Set up a test database environment (e.g., in-memory SQLite for unit tests, separate DB for integration tests)."
+      evaluation_criteria:
+        - "Significant increase in test coverage (aim for >70%)."
+        - "All critical business logic and API endpoints are covered by tests."
+        - "Tests run successfully and consistently."
+
+    - task_id: "API-ENH-06"
+      description: "Refine DevOps and Deployment Configurations."
+      steps:
+        - "Create a multi-stage Dockerfile for the NestJS application, optimizing for image size and security."
+        - "Configure `.dockerignore`."
+        - "Provide `deployment.yaml` and `service.yaml` for Kubernetes deployment."
+        - "Implement `configmap.yaml` and `secret.yaml` for environment variables and sensitive data."
+        - "Ensure the application runs as a non-root user in the container."
+      evaluation_criteria:
+        - "Dockerfile builds efficiently and securely."
+        - "Application can be successfully deployed to Kubernetes using provided YAMLs."
+        - "Secrets and configurations are managed appropriately."
+
+    - task_id: "API-ENH-07"
+      description: "Improve API Documentation."
+      steps:
+        - "Ensure all endpoints, DTOs, and responses are fully documented with Swagger/OpenAPI annotations."
+        - "Add detailed examples for request and response payloads."
+        - "Generate and serve the OpenAPI specification."
+      evaluation_criteria:
+        - "API documentation is comprehensive and accurate."
+        - "Documentation is easily accessible and reflects the current API."
+
+    - task_id: "API-ENH-08"
+      description: "Implement Scalability and Performance Optimizations."
+      steps:
+        - "Implement pagination for `findAllRooms` endpoint."
+        - "Consider adding Redis for caching frequently accessed data (e.g., room lists)."
+        - "Review and optimize database queries."
+      evaluation_criteria:
+        - "Room listing endpoint supports pagination."
+        - "Performance bottlenecks are identified and addressed."
+
+  evaluation_criteria:
+    - "All tasks are completed as per their individual criteria."
+    - "The API is more secure, robust, scalable, and maintainable."
+    - "Documentation and DevOps configurations are production-ready."
+
+output_specification:
+  output_format: "Code, documentation, configuration files, test reports."
+  delivery_method: "Updates to the existing Git repository."
+  quality_standards_for_output:
+    - "Code: Adheres to NestJS best practices, clean, readable, well-commented, and passes all tests."
+    - "Documentation: Clear, concise, accurate, and comprehensive (Swagger/OpenAPI, README updates)."
+    - "Configuration Files: Correctly formatted, functional, and secure."
+    - "Tests: High coverage, reliable, and automated."
+
+glossary_and_definitions:
+  - term: "JWT"
+    definition: "JSON Web Token, a compact, URL-safe means of representing claims to be transferred between two parties."
+  - term: "DTO"
+    definition: "Data Transfer Object, an object that carries data between processes."
+  - term: "TypeORM"
+    definition: "An ORM that can run in NodeJS, Browser, Cordova, PhoneGap, Ionic, React Native, NativeScript, Expo, and Electron platforms and can be used with TypeScript and JavaScript (ES5, ES6, ES7, ES8)."
+  - term: "WebSocket"
+    definition: "A computer communications protocol, providing full-duplex communication channels over a single TCP connection."
+
+few_shot_examples: []
