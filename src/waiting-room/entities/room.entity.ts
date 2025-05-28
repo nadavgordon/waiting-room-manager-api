@@ -18,10 +18,34 @@ export class Room {
   name: string;
 
   @Column({
+    type: 'boolean',
+    default: true, // Rooms are public by default
+  })
+  isPublic: boolean;
+
+  @Column({
+    type: 'boolean',
+    default: false, // Rooms do not require approval by default
+  })
+  approvalRequired: boolean;
+
+  @Column({
     type: 'int',
     default: 8, // Default max players
   })
   maxPlayers: number;
+
+  @Column({
+    type: 'simple-array',
+    default: '', // Stores as comma-separated string, empty by default
+  })
+  playerIds: string[];
+
+  @Column({
+    type: 'simple-array',
+    default: '', // Stores as comma-separated string, empty by default
+  })
+  pendingPlayerRequests: string[];
 
   @Column({
     type: 'varchar', // Changed from 'enum' for SQLite compatibility
