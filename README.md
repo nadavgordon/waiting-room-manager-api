@@ -21,14 +21,123 @@
   <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
   [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
-## Description
+# Waiting Room Manager API
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Project Overview
+This project implements a RESTful API for managing multiplayer game waiting rooms. It allows users to create, join, and manage game sessions before they start, incorporating robust authentication and a refined database schema.
 
-## Project setup
+## Features
+- **User Authentication**: Register and log in users using JWT.
+- **Room Management**:
+  - Create new waiting rooms with customizable settings (public/private, approval required, player limits).
+  - List available rooms, filtered by public status or user association.
+  - Join existing rooms (with pending requests for private rooms).
+  - Approve or decline join requests (for room hosts).
+  - Leave rooms or cancel pending join requests.
+  - Start games (only by room host, with player count validation).
+  - Delete rooms (only by room host).
+- **Relational Database Design**: Uses TypeORM with SQLite (easily configurable for PostgreSQL/MySQL) for managing `Room`, `User`, and `RoomPlayer` entities.
+- **Containerization**: Docker setup for easy deployment.
+- **API Documentation**: Swagger/OpenAPI for interactive API exploration.
+
+## Technologies Used
+- **Backend**: NestJS (Node.js, TypeScript)
+- **Database**: TypeORM with SQLite (can be configured for PostgreSQL, MySQL)
+- **Authentication**: JWT (JSON Web Tokens), Passport.js, bcrypt
+- **Validation**: Class-validator, Class-transformer
+- **Containerization**: Docker
+- **API Documentation**: Swagger (OpenAPI)
+
+## Setup
+
+### Prerequisites
+- Node.js (v18 or higher)
+- npm
+- Docker (optional, for containerized setup)
+
+### Local Development Setup
+
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/your-repo/waiting-room-manager-api.git
+    cd waiting-room-manager-api
+    ```
+
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
+
+3.  **Environment Variables:**
+    Create a `.env` file in the project root and add the following:
+    ```
+    PORT=3000
+    JWT_SECRET=your_super_secret_jwt_key_here # CHANGE THIS IN PRODUCTION!
+    CORS_ORIGINS=http://localhost:3000,http://localhost:4200 # Adjust as needed for your frontend
+    ```
+    *Note*: The `JWT_SECRET` should be a strong, randomly generated string in a production environment.
+
+4.  **Database Setup:**
+    The application uses SQLite by default, with the database file `db/waiting_room.sqlite`. TypeORM's `synchronize: true` is enabled for development, which automatically creates/updates the database schema on application start. For production, it's recommended to use TypeORM migrations.
+
+## Running the Application
+
+### Development Mode
+```bash
+npm run start:dev
+```
+The API will be accessible at `http://localhost:3000`.
+Swagger API documentation will be available at `http://localhost:3000/api`.
+
+### Production Mode
+```bash
+npm run build
+npm run start:prod
+```
+
+### Running with Docker
+1.  **Build the Docker image:**
+    ```bash
+    docker build -t waiting-room-api .
+    ```
+2.  **Run the Docker container:**
+    ```bash
+    docker run -p 3000:3000 --env-file ./.env waiting-room-api
+    ```
+    The `--env-file ./.env` flag passes your local `.env` variables into the container.
+
+## API Endpoints
+
+All API endpoints are prefixed with `/api`.
+
+### Authentication
+-   `POST /auth/register`: Register a new user.
+-   `POST /auth/login`: Log in a user and receive a JWT.
+
+*Note*: Most API endpoints require a valid JWT in the `Authorization: Bearer <token>` header.
+
+### Rooms
+-   `POST /rooms`: Create a new room. (Authenticated)
+-   `GET /rooms`: Get a list of rooms. (Authenticated, filters by public/private and user association)
+-   `GET /rooms/:id`: Get details of a specific room.
+-   `PATCH /rooms/:id`: Update a room. (Authenticated, host only)
+-   `DELETE /rooms/:id`: Delete a room. (Authenticated, host only)
+-   `POST /rooms/:roomId/join`: Join a room. (Authenticated)
+-   `POST /rooms/:roomId/pending-requests/:pendingUserId/respond`: Approve or decline a join request. (Authenticated, host only)
+-   `POST /rooms/:roomId/leave`: Leave a room. (Authenticated)
+-   `POST /rooms/:roomId/start`: Start a game in a room. (Authenticated, host only)
+
+## Tests
 
 ```bash
-$ npm install
+# unit tests
+$ npm run test
+
+# e2e tests
+$ npm run test:e2e
+
+# test coverage
+$ npm run test:cov
 ```
 
 ## Compile and run the project

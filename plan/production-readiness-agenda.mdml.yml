@@ -1,0 +1,228 @@
+mdml_version: "Agenda-1.4"
+document_type: AgendaInstance
+
+agenda_metadata:
+  name: "Waiting Room Manager API - Production Readiness & Phased Deployment Plan"
+  version: "1.1" # Updated version
+  goal: "To enhance the Waiting Room Manager API to a production-ready state and establish a phased deployment strategy, starting with Docker Compose for local development, progressing to local Kubernetes testing with Kind, and preparing for cloud Kubernetes deployment."
+  creation_date: "2025-05-28"
+  last_updated_date: "2025-05-28"
+  authors:
+    - name: "Roo (AI Technical Leader)"
+      role: "Architect / Planner"
+  status: "draft"
+  scope_summary: "This plan covers API backend enhancements (database, security, logging), and a three-stage containerization strategy: 1. Docker Compose for local development. 2. Kubernetes manifest development and local testing with Kind. 3. Planning and documentation for deployment to a cloud Kubernetes service."
+  target_audience: "Backend Developers, DevOps Engineers, Project Stakeholders"
+  estimated_duration: "Approx. 2-3 Sprints (depending on resource allocation and cloud setup complexity)"
+  related_documents:
+    - doc_id: "WRM-BLUEPRINT"
+      description: "Original Waiting Room Manager API Blueprint"
+      location: "plan/waiting-room-manager-api-blueprint.mdml.yml"
+    - doc_id: "WRM-IMPROVEMENTS-AGENDA-PREV"
+      description: "Previous Improvements Agenda (v1.0 for context)"
+      location: "plan/waiting-room-manager-api-improvements-agenda.mdml.yml"
+    - doc_id: "DOCKERFILE"
+      description: "Application Dockerfile"
+      location: "Dockerfile"
+    - doc_id: "APP-MODULE"
+      description: "NestJS Application Module (src/app.module.ts)"
+      location: "src/app.module.ts"
+    - doc_id: "JWT-STRATEGY"
+      description: "JWT Authentication Strategy (src/auth/jwt.strategy.ts)"
+      location: "src/auth/jwt.strategy.ts"
+
+executor_persona:
+  role: "Senior Backend Developer & DevOps Engineer"
+  expertise_level: "Proficient in NestJS, TypeORM, PostgreSQL, Docker, Kind, Kubernetes, and secure coding practices."
+  responsibilities:
+    - "Implement the API enhancements and containerization tasks outlined."
+    - "Ensure all changes are thoroughly tested locally (Compose & Kind) and documented."
+    - "Prepare for and document the transition to cloud Kubernetes."
+  communication_style: "Clear, concise, with proactive updates on progress, challenges, and potential issues."
+  tools_and_technologies:
+    - "NestJS, TypeORM, PostgreSQL, Redis"
+    - "Docker, Docker Compose, Kind, kubectl"
+    - "Kubernetes (for manifest creation and cloud deployment planning)"
+    - "Jest, Winston/Pino, Swagger, Git"
+
+task_context:
+  project_background: "The Waiting Room Manager API requires significant enhancements to become production-ready. This plan outlines these core API improvements alongside a robust, phased containerization and deployment strategy to ensure smooth local development, thorough local testing, and a clear path to cloud deployment."
+  problem_statement: "The API currently has critical gaps in database management, security, and operational practices. Furthermore, a clear, testable, and staged deployment strategy from local development to production is needed. This plan addresses both API enhancements and the deployment pipeline."
+  user_stories_or_scenarios:
+    - story_id: "DEV-LOCAL-001"
+      as_a: "Developer"
+      i_want_to: "run the entire application stack (API, DB, Cache) locally with a single command using Docker Compose"
+      so_that: "I can develop and test features efficiently in an environment that closely mirrors production services."
+    - story_id: "DEV-K8S-LOCAL-001"
+      as_a: "Developer/DevOps Engineer"
+      i_want_to: "test Kubernetes deployment manifests on a local Kind cluster"
+      so_that: "I can validate K8s configurations before deploying to a shared or cloud environment."
+    - story_id: "OPS-CLOUD-K8S-001"
+      as_a: "DevOps Engineer"
+      i_want_to: "deploy the API and its dependencies to a managed Kubernetes service in the cloud"
+      so_that: "the application is scalable, resilient, and manageable in production."
+  business_value_or_impact: "Implementing this plan will result in a production-grade API and a well-defined deployment workflow. This enhances reliability, security, developer productivity, and prepares the application for scalable cloud operations."
+
+task_definition:
+  overall_task_description: "Systematically enhance the Waiting Room Manager API to production standards and implement a three-stage containerization and deployment strategy: 1. Docker Compose for local development. 2. Kubernetes manifest development with local testing using Kind. 3. Planning and preparation for deployment to a cloud-based Kubernetes service."
+  key_deliverables:
+    - "Production-ready API (PostgreSQL, migrations, hardened security, logging)."
+    - "`docker-compose.yml` for local multi-container development environment."
+    - "Kubernetes manifests (`deployment.yaml`, `service.yaml`, etc.) for API, PostgreSQL, and Redis."
+    - "Documentation for setting up and using Docker Compose locally."
+    - "Documentation for setting up a local Kind cluster and testing K8s manifests."
+    - "A planning document outlining considerations for deploying to a specific cloud Kubernetes service (e.g., EKS, GKE, AKS)."
+    - "Updated `.env.example` covering all necessary configurations."
+    - "Comprehensive API documentation (Swagger) and updated `README.md`."
+  instructions:
+    core_steps:
+      - step_id: "API-CORE-ENHANCEMENTS"
+        description: "Implement Core API Production Readiness Enhancements"
+        status: "pending"
+        notes: ""
+        sub_steps:
+          - "Execute DB-SETUP: Transition to PostgreSQL & Implement Migrations (as previously detailed in thought process: install pg, update TypeORM config, synchronize:false, configure migrations path, generate initial migration, add package.json scripts, document, update .env.example)."
+          - "Execute JWT-HARDEN: Secure JWT Secret Management (as previously detailed: remove default empty string, throw startup error if undefined/empty/short, update .env.example, document)."
+          - "Execute LOGGING-IMPL: Implement Comprehensive Logging (as previously detailed: install winston/pino, modify AllExceptionsFilter, structure logs, include context, configure levels, update .env.example)."
+          - "Execute PW-POLICY: Enhance Password Security Policy (as previously detailed: use @Matches for complexity in DTOs, provide clear validation messages)."
+          - "Execute CORS-CONFIG: Finalize and Document CORS Configuration (as previously detailed: ensure default to [], update .env.example, document)."
+          - "Execute TEST-COVERAGE: Complete and Enhance Test Coverage (as previously detailed: integration tests for WaitingRoomController, aim >80% coverage, test against real DB type)."
+          - "Execute PAGINATION: Implement Pagination for List Endpoints (as previously detailed: DTOs for page/limit, use skip/take, return paginated results, update Swagger)."
+          - "Execute REDIS-CACHE: Implement Redis Caching (Optional - as previously detailed: install dependencies, configure CacheModule, identify caching points, update .env.example)."
+          - "Execute SWAGGER-DOCS: Finalize API Documentation (Swagger - as previously detailed: review annotations, add examples, verify spec)."
+
+      - step_id: "DOCKER-COMPOSE-SETUP"
+        description: "Stage 1: Setup Docker Compose for Local Development"
+        status: "pending"
+        notes: ""
+        sub_steps:
+          - "Create `docker-compose.yml` at the project root."
+          - "Define services: `api` (builds from Dockerfile), `db` (PostgreSQL image), `cache` (Redis image)."
+          - "Configure shared Docker network for inter-service communication."
+          - "Map persistent volume for PostgreSQL data."
+          - "Mount local source code to `api` service for hot-reloading (e.g., `./src:/app/src` if `WORKDIR` is `/app`)."
+          - "Configure services to use environment variables from an `.env` file (via `env_file: ./.env` or direct variable injection)."
+          - "Ensure `.env` is in `.gitignore`."
+          - "Update `.env.example` with all variables needed for Docker Compose (API, DB, Redis connection strings, JWT_SECRET, etc.)."
+          - "Document how to start (`docker-compose up -d`), stop (`docker-compose down`), view logs (`docker-compose logs -f api`), and manage the local environment using Docker Compose in `README.md`."
+      - step_id: "KIND-LOCAL-K8S"
+        description: "Stage 2: Develop Kubernetes Manifests & Test Locally with Kind"
+        status: "pending"
+        notes: ""
+        sub_steps:
+          - "Create a `k8s/` directory at the project root."
+          - "Develop Kubernetes manifests: `api-deployment.yaml`, `api-service.yaml`, `postgres-statefulset.yaml` (preferred for DBs) or `postgres-deployment.yaml` + `postgres-pvc.yaml`, `postgres-service.yaml`, `redis-deployment.yaml`, `redis-service.yaml` (consider Redis PVC if persistence needed), `configmap.yaml` (for non-sensitive app config), `secret.yaml` (template/instructions for creating actual secrets)."
+          - "Ensure manifests use environment variables from ConfigMaps and Secrets (e.g., `valueFrom: configMapKeyRef` or `secretKeyRef`)."
+          - "Implement readiness (`/health/ready`) and liveness (`/health/live`) probes in the API deployment, pointing to appropriate health check endpoints in the NestJS app (these may need to be created if not existing)."
+          - "Define resource requests and limits (CPU, memory) for all deployments."
+          - "Document in `README.md` how to:
+              - Install Kind and kubectl.
+              - Create a local Kind cluster (e.g., `kind create cluster --name waiting-room-dev`).
+              - Build the API Docker image (e.g., `docker build -t waiting-room-api:local .`).
+              - Load the API Docker image into the Kind cluster (e.g., `kind load docker-image waiting-room-api:local --name waiting-room-dev`).
+              - Apply the Kubernetes manifests to the Kind cluster (e.g., `kubectl apply -f k8s/`).
+              - Access the API and other services (e.g., using `kubectl port-forward svc/api-service 3000:3000`).
+              - View logs (`kubectl logs -f deployment/api-deployment`) and troubleshoot.
+              - Tear down the Kind cluster (`kind delete cluster --name waiting-room-dev`)."
+          - "Thoroughly test the full application deployment on the local Kind cluster, including inter-service communication and data persistence for PostgreSQL."
+      - step_id: "CLOUD-K8S-PREP"
+        description: "Stage 3: Plan and Prepare for Cloud Kubernetes Deployment"
+        status: "pending"
+        notes: ""
+        sub_steps:
+          - "Research and formally select a target managed Kubernetes service (e.g., AWS EKS, Google GKE, Azure AKS) if not already definitively chosen."
+          - "Document considerations for the chosen cloud provider in `plan/cloud-deployment-guide.md` (create this file):
+              - Image Registry strategy (e.g., ECR, GCR, ACR) and image push automation.
+              - Database as a Service (e.g., RDS, Cloud SQL, Azure DB for PostgreSQL) vs. self-managed PostgreSQL on K8s: pros, cons, and recommended approach for this project.
+              - Cache as a Service (e.g., ElastiCache, Memorystore, Azure Cache for Redis) vs. self-managed Redis on K8s.
+              - Ingress controller setup (e.g., Nginx Ingress, ALB Ingress Controller for AWS) and SSL/TLS certificate management (e.g., cert-manager with Let's Encrypt).
+              - Secrets management strategy in the cloud (e.g., AWS Secrets Manager, Google Secret Manager, Azure Key Vault integration with K8s Secrets, or HashiCorp Vault).
+              - CI/CD pipeline integration: tools and workflow for building images, running tests, and deploying to the cloud K8s cluster (e.g., GitHub Actions, GitLab CI, Jenkins).
+              - Centralized monitoring and logging solutions in the cloud environment (e.g., Prometheus/Grafana stack, CloudWatch, Google Cloud Operations, Azure Monitor)."
+          - "Adapt Kubernetes manifests in `k8s/` (or create environment-specific overlays using Kustomize if complexity grows) for the specific cloud provider or managed services (e.g., annotations for LoadBalancers, Ingress class, IAM roles for service accounts if using AWS EKS)."
+          - "Outline a high-level deployment workflow and rollback strategy for the chosen cloud in `plan/cloud-deployment-guide.md`."
+  constraints_and_assumptions:
+    constraints:
+      - "Must use NestJS, TypeORM, PostgreSQL."
+      - "Deployment targets are Docker Compose (local), Kind (local K8s), and a cloud Kubernetes service."
+    assumptions:
+      - "PostgreSQL and Redis instances (or managed services) will be available/configurable for each environment stage."
+      - "Team has or will acquire skills for Docker Compose, Kind, and the chosen cloud K8s platform."
+      - "Budget for cloud services (managed K8s, DB, cache, registry) is considered."
+  success_metrics_or_evaluation_criteria:
+    - "API core enhancements are completed and verified."
+    - "Local development environment is fully functional and documented using Docker Compose."
+    - "Application deploys and runs successfully on a local Kind cluster using K8s manifests, with inter-service communication and persistence working."
+    - "A clear, actionable plan and documentation exist for deploying to a specific cloud Kubernetes service."
+  acceptance_criteria:
+    - "All `core_steps` are implemented and tested through their respective stages."
+    - "The API is secure, stable, observable, and demonstrably ready for a staged rollout to the cloud."
+    - "`README.md`, `.env.example`, and `plan/cloud-deployment-guide.md` are comprehensive, accurate, and provide clear instructions."
+
+output_specification:
+  expected_outputs:
+    - output_id: "SRC-UPDATE"
+      description: "Updated application source code with all API enhancements."
+      format_or_type: "Git Repository Branch/PR"
+      delivery_method: "Git commit/push."
+    - output_id: "DOCKER-COMPOSE-FILE"
+      description: "`docker-compose.yml` for local development."
+      format_or_type: "YAML file"
+      delivery_method: "Committed to Git repository root."
+    - output_id: "K8S-MANIFEST-FILES"
+      description: "Kubernetes manifest files for API, PostgreSQL, Redis, ConfigMaps, Secrets, suitable for Kind and adaptable for cloud."
+      format_or_type: "YAML files"
+      delivery_method: "Committed to `k8s/` directory."
+    - output_id: "ENV-EXAMPLE-UPDATED"
+      description: "Comprehensive `.env.example` file covering all configurations for local and K8s."
+      format_or_type: ".env text file"
+      delivery_method: "Committed to Git repository root."
+    - output_id: "README-UPDATED"
+      description: "Updated `README.md` with setup instructions for Docker Compose, Kind local K8s testing, and general project information."
+      format_or_type: "Markdown file"
+      delivery_method: "Committed to Git repository."
+    - output_id: "CLOUD-DEPLOY-GUIDE"
+      description: "Document (`plan/cloud-deployment-guide.md`) outlining cloud Kubernetes deployment strategy, provider-specific considerations, and CI/CD integration points."
+      format_or_type: "Markdown file"
+      delivery_method: "Committed to Git repository."
+  quality_standards_for_output:
+    - "Code: Adheres to NestJS best practices, ESLint/Prettier rules, clean, readable, well-commented."
+    - "Containerization: Dockerfile optimized; Docker Compose and Kubernetes configurations are robust, secure, and follow best practices."
+    - "Tests: High coverage (>80%), reliable, automated, passing in local (Compose & Kind) and CI environments."
+    - "Documentation: Clear, concise, accurate, and actionable for developers and DevOps."
+
+glossary_and_definitions:
+  - term: "Kind"
+    definition: "Kubernetes IN Docker - A tool for running local Kubernetes clusters using Docker container 'nodes', ideal for testing K8s manifests locally."
+  - term: "Docker Compose"
+    definition: "A tool for defining and running multi-container Docker applications, primarily for local development environments."
+  - term: "JWT"
+    definition: "JSON Web Token - An open standard (RFC 7519) for securely transmitting information between parties as a JSON object."
+  - term: "DTO"
+    definition: "Data Transfer Object - An object that carries data between processes, often used for request/response payloads in APIs."
+  - term: "ORM"
+    definition: "Object-Relational Mapper - A programming technique for converting data between incompatible type systems using object-oriented programming languages (e.g., TypeORM)."
+  - term: "CORS"
+    definition: "Cross-Origin Resource Sharing - A browser security feature that restricts cross-origin HTTP requests initiated from scripts."
+  - term: "PostgreSQL"
+    definition: "A powerful, open-source object-relational database system."
+  - term: "Redis"
+    definition: "An open-source, in-memory data structure store, used as a database, cache, and message broker."
+  - term: "Kubernetes (K8s)"
+    definition: "An open-source system for automating deployment, scaling, and management of containerized applications."
+  - term: "Migration (DB)"
+    definition: "A controlled way to evolve database schema over time, keeping it synchronized with the application's codebase."
+  - term: "`.env.example`"
+    definition: "A template file listing all necessary environment variables for an application, with placeholders or example values, to be copied to `.env` and populated."
+  - term: "StatefulSet (K8s)"
+    definition: "A Kubernetes workload API object used to manage stateful applications, providing stable, unique network identifiers and persistent storage."
+  - term: "ConfigMap (K8s)"
+    definition: "A Kubernetes API object used to store non-confidential data in key-value pairs, consumable by pods as environment variables, command-line arguments, or configuration files in a volume."
+  - term: "Secret (K8s)"
+    definition: "A Kubernetes API object used to store and manage sensitive information, such as passwords, OAuth tokens, and ssh keys."
+  - term: "PVC (PersistentVolumeClaim K8s)"
+    definition: "A request for storage by a user in Kubernetes, which can be fulfilled by a PersistentVolume."
+  - term: "Ingress (K8s)"
+    definition: "A Kubernetes API object that manages external access to services in a cluster, typically HTTP. Ingress can provide load balancing, SSL termination, and name-based virtual hosting."
+
+few_shot_examples: []

@@ -99,7 +99,7 @@ task_definition:
         deliverables_impacted: ["SOURCE_CODE"]
         status: "completed"
         completion_date: "2025-05-27"
-        notes: "Basic room creation implemented, but missing some configurations (visibility, approval settings, etc.)"
+        notes: "Basic room creation implemented, but missing some configurations (visibility, approval settings, etc.). Host ID is now derived from authenticated user."
         sub_steps:
           - "Define room model/entity (Title, IsPublic, ApprovalRequired, Min/Max Players, AutoStart, HostID, RoomIdentifier)."
           - "Implement logic for generating random, hard-to-guess room identifier."
@@ -162,8 +162,9 @@ task_definition:
       - step_id: "API-SEC-01"
         description: "Implement Security Measures."
         deliverables_impacted: ["SOURCE_CODE"]
-        status: "pending"
+        status: "completed"
         priority: "high"
+        notes: "JWT authentication implemented and fine-grained CORS management configured. SQLi protections are handled by TypeORM."
         sub_steps:
           - "Ensure protection against SQL Injection."
           - "Implement fine-grained CORS management (no '*')."
@@ -172,13 +173,15 @@ task_definition:
       - step_id: "DEVOPS-DOCKER-01"
         description: "Prepare Docker setup."
         deliverables_impacted: ["DOCKERFILE", "SOURCE_CODE"]
-        status: "pending"
+        status: "completed"
+        completion_date: "2025-05-28"
         priority: "high"
+        notes: "Multi-stage Dockerfile and .dockerignore created. Application configured to run as non-root user."
         sub_steps:
-          - "Define a multi-step Dockerfile."
-          - "Configure .dockerignore."
-          - "Use environment variables for configuration."
-          - "Ensure application does not run as root in the container."
+          - "Defined a multi-step Dockerfile."
+          - "Configured .dockerignore."
+          - "Used environment variables for configuration."
+          - "Ensured application does not run as root in the container."
       - step_id: "DEVOPS-K8S-01"
         description: "(Bonus) Prepare Kubernetes YAMLs."
         deliverables_impacted: ["K8S-YAMLS", "README"]

@@ -40,11 +40,4 @@ export class CreateRoomDto {
   @IsBoolean()
   approvalRequired?: boolean;
 
-  @ApiProperty({
-    example: 'a1b2c3d4-e5f6-7890-1234-567890abcdef',
-    description: 'The UUID of the host creating the room',
-  })
-  @IsNotEmpty()
-  @IsUUID('4') // Explicitly expect version 4
-  hostId: string; // Assuming hostId is a UUID
 }

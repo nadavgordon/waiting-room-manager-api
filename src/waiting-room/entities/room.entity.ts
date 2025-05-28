@@ -1,4 +1,6 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
+import { RoomPlayer } from './room-player.entity';
+import { User } from '../../user/entities/user.entity';
 
 export enum RoomStatus {
   WAITING = 'waiting',
@@ -35,17 +37,11 @@ export class Room {
   })
   maxPlayers: number;
 
-  @Column({
-    type: 'simple-array',
-    default: '', // Stores as comma-separated string, empty by default
-  })
-  playerIds: string[];
+  @OneToMany(() => RoomPlayer, roomPlayer => roomPlayer.room)
+  roomPlayers: RoomPlayer[];
 
-  @Column({
-    type: 'simple-array',
-    default: '', // Stores as comma-separated string, empty by default
-  })
-  pendingPlayerRequests: string[];
+  // For pending requests, we can add a status to RoomPlayer or a separate entity if needed.
+  // For now, we'll assume pending requests are also handled via RoomPlayer with a status.
 
   @Column({
     type: 'varchar', // Changed from 'enum' for SQLite compatibility
@@ -54,11 +50,12 @@ export class Room {
   })
   status: RoomStatus;
 
-  @Column({
-    type: 'varchar', // Assuming hostId is a string, e.g., a user's UUID
-    nullable: false, // A room must have a host
-  })
-  hostId: string;
+  @Column({ nullable: false })
+  hostId: string; // Foreign key for the host user
+
+  @ManyToOne(() => User, user => user.hostedRooms)
+  @JoinColumn({ name: 'hostId' })
+  host: User;
 
   @CreateDateColumn()
   createdAt: Date;

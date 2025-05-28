@@ -1,42 +1,66 @@
-import { Injectable, NotFoundException, BadRequestException, HttpException, HttpStatus, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Room, RoomStatus } from './entities/room.entity';
+import { RoomPlayer } from './entities/room-player.entity';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
-import { JoinRoomDto } from './dto/join-room.dto';
 import { JoinRequestDecision } from './dto/respond-to-join-request.dto';
-import { LeaveRoomDto } from './dto/leave-room.dto';
-import { StartGameDto } from './dto/start-game.dto';
-import { DeleteRoomDto } from './dto/delete-room.dto';
+import { User } from '../user/entities/user.entity';
+import { RoomPlayerStatus } from './enums/room-player-status.enum';
+import { WaitingRoomGateway } from './waiting-room.gateway';
 
 @Injectable()
 export class WaitingRoomService {
   constructor(
     @InjectRepository(Room)
     private readonly roomRepository: Repository<Room>,
+    @InjectRepository(RoomPlayer)
+    private readonly roomPlayerRepository: Repository<RoomPlayer>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+    private readonly waitingRoomGateway: WaitingRoomGateway,
   ) {}
 
-  async createRoom(createRoomDto: CreateRoomDto): Promise<Room> {
+  async createRoom(createRoomDto: CreateRoomDto, hostId: string): Promise<Room> {
+    const host = await this.userRepository.findOneBy({ id: hostId });
+    if (!host) {
+      throw new NotFoundException(`Host with ID "${hostId}" not found.`);
+    }
+
     const newRoom = this.roomRepository.create({
       ...createRoomDto,
-      isPublic: createRoomDto.isPublic === undefined ? true : createRoomDto.isPublic,
-      approvalRequired: createRoomDto.approvalRequired === undefined ? false : createRoomDto.approvalRequired,
-      playerIds: [],
-      pendingPlayerRequests: [],
-      // status will default to 'waiting' as per entity definition
+      isPublic: createRoomDto.isPublic ?? true,
+      approvalRequired: createRoomDto.approvalRequired ?? false,
+      hostId: host.id,
+      host: host,
     });
-    return this.roomRepository.save(newRoom);
+    const savedRoom = await this.roomRepository.save(newRoom);
+
+    // Add the host as an active player in the room
+    const hostRoomPlayer = this.roomPlayerRepository.create({
+      roomId: savedRoom.id,
+      userId: host.id,
+      status: RoomPlayerStatus.ACTIVE,
+    });
+    await this.roomPlayerRepository.save(hostRoomPlayer);
+
+    this.waitingRoomGateway.emitRoomUpdate(savedRoom);
+    return this.findRoomById(savedRoom.id); // Return the room with populated relations
   }
 
   async findAllRooms(userId?: string): Promise<Room[]> {
-    const queryBuilder = this.roomRepository.createQueryBuilder('room');
+    const queryBuilder = this.roomRepository.createQueryBuilder('room')
+      .leftJoinAndSelect('room.host', 'host')
+      .leftJoinAndSelect('room.roomPlayers', 'roomPlayer')
+      .leftJoinAndSelect('roomPlayer.player', 'player');
 
     if (userId) {
       queryBuilder.where('room.isPublic = :isPublicTrue', { isPublicTrue: true })
-        .orWhere('(room.isPublic = :isPublicFalse AND room.hostId = :currentUserId)', {
-          isPublicFalse: false,
+        .orWhere('room.hostId = :currentUserId', { currentUserId: userId })
+        .orWhere('roomPlayer.userId = :currentUserId AND roomPlayer.status = :activeStatus', {
           currentUserId: userId,
+          activeStatus: RoomPlayerStatus.ACTIVE,
         });
     } else {
       queryBuilder.where('room.isPublic = :isPublicTrue', { isPublicTrue: true });
@@ -46,17 +70,25 @@ export class WaitingRoomService {
   }
 
   async findRoomById(id: string): Promise<Room> {
-    const room = await this.roomRepository.findOneBy({ id });
+    const room = await this.roomRepository.findOne({
+      where: { id },
+      relations: ['host', 'roomPlayers', 'roomPlayers.player'],
+    });
     if (!room) {
       throw new NotFoundException(`Room with ID "${id}" not found`);
     }
     return room;
   }
 
-  async updateRoom(id: string, updateRoomDto: UpdateRoomDto): Promise<Room> {
-    const room = await this.findRoomById(id); 
+  async updateRoom(id: string, updateRoomDto: UpdateRoomDto, hostId: string): Promise<Room> {
+    const room = await this.findRoomById(id);
+    if (room.hostId !== hostId) {
+      throw new ForbiddenException('Only the host can update this room.');
+    }
     Object.assign(room, updateRoomDto);
-    return this.roomRepository.save(room);
+    const updatedRoom = await this.roomRepository.save(room);
+    this.waitingRoomGateway.emitRoomUpdate(updatedRoom);
+    return updatedRoom;
   }
 
   async deleteRoom(roomId: string, hostId: string): Promise<{ message: string }> {
@@ -70,144 +102,149 @@ export class WaitingRoomService {
       throw new ForbiddenException('Only the host can delete this room.');
     }
 
+    // Cascade delete should handle roomPlayers, but explicitly deleting them first is safer
+    await this.roomPlayerRepository.delete({ roomId: roomId });
     const deleteResult = await this.roomRepository.delete(roomId);
 
     if (deleteResult.affected === 0) {
-      // This case should ideally not be reached if findOne succeeded, but good for robustness
       throw new NotFoundException(`Room with ID "${roomId}" could not be deleted or was already deleted.`);
     }
 
+    this.waitingRoomGateway.emitRoomUpdate({ id: roomId, status: RoomStatus.FINISHED } as Room); // Emit a simplified update for deletion
     return { message: `Room with ID "${roomId}" successfully deleted.` };
   }
 
   async joinRoom(roomId: string, userId: string): Promise<Room> {
-    const room = await this.findRoomById(roomId); // Leverages existing find and NotFoundException
+    const room = await this.findRoomById(roomId);
+    const user = await this.userRepository.findOneBy({ id: userId });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID "${userId}" not found.`);
+    }
 
     // Check if the user is the host
     if (room.hostId === userId) {
-      throw new BadRequestException('Host cannot join the room as a player.');
+      throw new BadRequestException('Host is already part of the room and cannot join as a player.');
     }
 
-    // If the room is private and requires approval
-    if (!room.isPublic && room.approvalRequired) {
-      // Check if player is already pending
-      if (room.pendingPlayerRequests.includes(userId)) {
-        throw new BadRequestException('Join request already pending.');
+    // Check if user is already an active player or has a pending request
+    const existingPlayer = await this.roomPlayerRepository.findOne({
+      where: { roomId, userId },
+    });
+
+    if (existingPlayer) {
+      if (existingPlayer.status === RoomPlayerStatus.ACTIVE) {
+        throw new BadRequestException('Player is already in this room.');
       }
-      // Check if player is already in the room (should be caught by pending check if they were approved)
-      if (room.playerIds.includes(userId)) {
-        throw new BadRequestException('Player already in room.');
+      if (existingPlayer.status === RoomPlayerStatus.PENDING) {
+        throw new BadRequestException('Join request already pending for this room.');
       }
-      // Add to pending requests
-      room.pendingPlayerRequests.push(userId);
-      await this.roomRepository.save(room);
-      // Consider returning a specific status/message indicating request is pending
-      // For now, returning the room state which shows the pending request.
-      // Or throw a specific exception that the controller can catch to return 202 Accepted.
-      // Let's throw a custom exception for now, or a specific message.
-      // For simplicity, we'll return the room and the client can check pendingPlayerRequests.
-      // A more RESTful approach might be a 202 Accepted with a link to the request status.
-      return room; // Or throw new HttpException('Request to join is pending approval', HttpStatus.ACCEPTED);
+      // If status is DECLINED or LEFT, we can allow a new request/join
+      await this.roomPlayerRepository.remove(existingPlayer); // Remove old entry to create a new one
     }
 
-    // Check if room is full (only if not pending approval, as approval might fill it)
-    if (room.playerIds.length >= room.maxPlayers) {
+    // Check room capacity
+    const activePlayersCount = await this.roomPlayerRepository.count({
+      where: { roomId, status: RoomPlayerStatus.ACTIVE },
+    });
+
+    if (activePlayersCount >= room.maxPlayers) {
       throw new BadRequestException('Room is full.');
     }
 
-    // Check if player is already in the room
-    if (room.playerIds.includes(userId)) {
-      throw new BadRequestException('Player already in room.');
+    let newPlayerStatus: RoomPlayerStatus;
+    if (!room.isPublic && room.approvalRequired) {
+      newPlayerStatus = RoomPlayerStatus.PENDING;
+    } else {
+      newPlayerStatus = RoomPlayerStatus.ACTIVE;
     }
 
-    // Add player to room
-    room.playerIds.push(userId);
-    return this.roomRepository.save(room);
+    const roomPlayer = this.roomPlayerRepository.create({
+      roomId: room.id,
+      userId: user.id,
+      status: newPlayerStatus,
+    });
+    await this.roomPlayerRepository.save(roomPlayer);
+    const updatedRoom = await this.findRoomById(roomId);
+    this.waitingRoomGateway.emitRoomUpdate(updatedRoom);
+    return updatedRoom;
   }
 
   async approveOrDeclineJoinRequest(
     roomId: string,
     pendingUserId: string,
     decision: JoinRequestDecision,
-    hostUserId: string, // This will come from the authenticated user (e.g., JWT payload)
+    hostId: string,
   ): Promise<Room> {
-    const room = await this.roomRepository.findOne({ where: { id: roomId } });
+    const room = await this.findRoomById(roomId);
 
-    if (!room) {
-      throw new NotFoundException(`Room with ID "${roomId}" not found`);
-    }
-
-    // Verify the action is performed by the host
-    if (room.hostId !== hostUserId) {
+    if (room.hostId !== hostId) {
       throw new ForbiddenException('Only the room host can approve or decline join requests.');
     }
 
-    // Check if the room actually requires approval
     if (!room.approvalRequired) {
       throw new BadRequestException('This room does not require approval for join requests.');
     }
 
-    const requestIndex = room.pendingPlayerRequests.indexOf(pendingUserId);
-    if (requestIndex === -1) {
-      throw new BadRequestException(`Join request for user "${pendingUserId}" not found or already processed.`);
+    const pendingRoomPlayer = await this.roomPlayerRepository.findOne({
+      where: {
+        roomId,
+        userId: pendingUserId,
+        status: RoomPlayerStatus.PENDING,
+      },
+    });
+
+    if (!pendingRoomPlayer) {
+      throw new NotFoundException(`Join request for user "${pendingUserId}" not found or already processed.`);
     }
 
     if (decision === JoinRequestDecision.APPROVE) {
-      // Check if player is already in the room (should not happen if logic is correct, but good safeguard)
-      if (room.playerIds.includes(pendingUserId)) {
-        // Remove from pending if somehow still there and throw error or just log
-        room.pendingPlayerRequests.splice(requestIndex, 1);
-        await this.roomRepository.save(room);
-        throw new BadRequestException(`Player "${pendingUserId}" is already in the room.`);
-      }
-      
-      // Check room capacity before approving
-      if (room.playerIds.length >= room.maxPlayers) {
+      const activePlayersCount = await this.roomPlayerRepository.count({
+        where: { roomId, status: RoomPlayerStatus.ACTIVE },
+      });
+
+      if (activePlayersCount >= room.maxPlayers) {
         throw new BadRequestException('Cannot approve join request: Room is full.');
       }
-      room.playerIds.push(pendingUserId);
-    } else { // Decision is DECLINE
-      // No action needed for playerIds, just remove from pending
+      pendingRoomPlayer.status = RoomPlayerStatus.ACTIVE;
+    } else {
+      pendingRoomPlayer.status = RoomPlayerStatus.DECLINED;
     }
 
-    // Remove from pending requests regardless of decision
-    room.pendingPlayerRequests.splice(requestIndex, 1);
-
-    return this.roomRepository.save(room);
+    await this.roomPlayerRepository.save(pendingRoomPlayer);
+    const updatedRoom = await this.findRoomById(roomId);
+    this.waitingRoomGateway.emitRoomUpdate(updatedRoom);
+    return this.findRoomById(roomId);
   }
 
   async leaveRoom(roomId: string, userId: string): Promise<Room> {
-    const room = await this.roomRepository.findOne({ where: { id: roomId } });
+    const room = await this.findRoomById(roomId);
 
-    if (!room) {
-      throw new NotFoundException(`Room with ID "${roomId}" not found`);
-    }
-
-    // Prevent host from using this endpoint
     if (room.hostId === userId) {
       throw new BadRequestException('Host cannot leave the room using this endpoint. Hosts can delete their rooms.');
     }
 
-    const playerIndex = room.playerIds.indexOf(userId);
-    const pendingIndex = room.pendingPlayerRequests.indexOf(userId);
+    const roomPlayer = await this.roomPlayerRepository.findOne({
+      where: { roomId, userId },
+    });
 
-    if (playerIndex > -1) {
-      room.playerIds.splice(playerIndex, 1);
-    } else if (pendingIndex > -1) {
-      room.pendingPlayerRequests.splice(pendingIndex, 1);
-    } else {
-      throw new BadRequestException('User is not an active player in this room nor has a pending join request.');
+    if (!roomPlayer) {
+      throw new BadRequestException('User is not associated with this room.');
     }
 
-    return this.roomRepository.save(room);
+    if (roomPlayer.status === RoomPlayerStatus.ACTIVE || roomPlayer.status === RoomPlayerStatus.PENDING) {
+      roomPlayer.status = RoomPlayerStatus.LEFT;
+      await this.roomPlayerRepository.save(roomPlayer);
+    } else {
+      throw new BadRequestException('User has already left or declined to join this room.');
+    }
+    const updatedRoom = await this.findRoomById(roomId);
+    this.waitingRoomGateway.emitRoomUpdate(updatedRoom);
+    return updatedRoom;
   }
 
   async startGame(roomId: string, hostId: string): Promise<Room> {
-    const room = await this.roomRepository.findOne({ where: { id: roomId } });
-
-    if (!room) {
-      throw new NotFoundException(`Room with ID "${roomId}" not found`);
-    }
+    const room = await this.findRoomById(roomId);
 
     if (room.hostId !== hostId) {
       throw new ForbiddenException('Only the host can start the game.');
@@ -217,16 +254,23 @@ export class WaitingRoomService {
       throw new BadRequestException(`Game cannot be started. Room status is currently '${room.status}'.`);
     }
 
-    if (room.playerIds.length === 0) {
+    const activePlayersCount = await this.roomPlayerRepository.count({
+      where: { roomId, status: RoomPlayerStatus.ACTIVE },
+    });
+
+    if (activePlayersCount === 0) {
       throw new BadRequestException('Cannot start a game with no players.');
     }
 
     room.status = RoomStatus.IN_PROGRESS;
-    room.pendingPlayerRequests = []; // Clear pending requests when game starts
+    // Optionally, decline all pending requests when game starts
+    await this.roomPlayerRepository.update(
+      { roomId, status: RoomPlayerStatus.PENDING },
+      { status: RoomPlayerStatus.DECLINED },
+    );
 
-    return this.roomRepository.save(room);
+    const updatedRoom = await this.roomRepository.save(room);
+    this.waitingRoomGateway.emitRoomUpdate(updatedRoom);
+    return updatedRoom;
   }
-
-  // Placeholder for changing room status, e.g., starting a game
-  // async changeRoomStatus(roomId: string, newStatus: RoomStatus): Promise<Room> { ... }
 }
