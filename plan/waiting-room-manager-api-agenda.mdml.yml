@@ -18,6 +18,12 @@ agenda_metadata:
     - doc_id: "WRM-API-REQ-MD"
       description: "Main requirements and overview markdown file."
       location: "plan/waiting-room-manager-api.md"
+    - doc_id: "WRM-API-BLUEPRINT"
+      description: "Waiting Room Manager API Blueprint."
+      location: "plan/waiting-room-manager-api-blueprint.mdml.yml"
+    - doc_id: "WRM-API-IMPROVEMENTS-AGENDA"
+      description: "Waiting Room Manager API Improvement Agenda."
+      location: "plan/waiting-room-manager-api-improvements-agenda.mdml.yml"
 
 executor_persona:
   role: "Backend Software Developer & DevOps Engineer"
