@@ -5,25 +5,36 @@ import { LoginUserDto } from '../user/dto/login-user.dto';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from './jwt-auth.guard';
 
-@ApiTags('auth')
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Register a new user' })
-  @ApiResponse({ status: 201, description: 'User successfully registered.' })
-  @ApiResponse({ status: 400, description: 'Bad Request. Invalid input data or username already exists.' })
+  @ApiOperation({ summary: 'Register a new user account' })
+  @ApiResponse({
+    status: 201,
+    description: 'User successfully registered.',
+    schema: { example: { username: 'john_doe', id: 'uuid-string' } },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request. Invalid input data, username already exists, or password policy violation.',
+  })
   async register(@Body() createUserDto: CreateUserDto) {
     return this.authService.register(createUserDto.username, createUserDto.password);
   }
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Log in a user and get a JWT' })
-  @ApiResponse({ status: 200, description: 'User successfully logged in.', schema: { example: { access_token: 'eyJ...' } } })
-  @ApiResponse({ status: 401, description: 'Unauthorized. Invalid credentials.' })
+  @ApiOperation({ summary: 'Authenticate user and receive JWT access token' })
+  @ApiResponse({
+    status: 200,
+    description: 'User successfully logged in and JWT token issued.',
+    schema: { example: { access_token: 'eyJ...' } },
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized. Invalid username or password.' })
   async login(@Body() loginUserDto: LoginUserDto, @Request() req: any) {
     const user = await this.authService.validateUser(loginUserDto.username, loginUserDto.password);
     if (!user) {

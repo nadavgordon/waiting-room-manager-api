@@ -72,13 +72,81 @@ This project implements a RESTful API for managing multiplayer game waiting room
     Create a `.env` file in the project root and add the following:
     ```
     PORT=3000
-    JWT_SECRET=your_super_secret_jwt_key_here # CHANGE THIS IN PRODUCTION!
-    CORS_ORIGINS=http://localhost:3000,http://localhost:4200 # Adjust as needed for your frontend
+    JWT_SECRET=_your_super_secret_jwt_key_here_ # IMPORTANT: Change this in production!
+    CORS_ORIGINS=http://localhost:3001,https://your-frontend-domain.com # Adjust as needed for your frontend
     ```
-    *Note*: The `JWT_SECRET` should be a strong, randomly generated string in a production environment.
+
+    **JWT_SECRET Importance:**
+    The `JWT_SECRET` is crucial for signing and verifying JSON Web Tokens (JWTs) used for user authentication. A weak or easily guessable secret compromises the security of your application, allowing attackers to forge valid tokens and impersonate users.
+
+    **Recommendations for `JWT_SECRET`:**
+    *   **Strength:** Use a strong, random string of at least 32 characters (e.g., 64 characters for better security).
+    *   **Generation:** You can generate a suitable secret using a command like:
+        ```bash
+        node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+        ```
+    *   **Environment Loading:** The application is configured to load `JWT_SECRET` from environment variables. It also includes a startup check in `src/main.ts` to ensure this variable is defined and meets a minimum length requirement, preventing the application from starting with an insecure configuration.
+    *   **Never Hardcode:** Do not hardcode the secret directly in your source code.
+    *   **Rotation:** Consider a strategy for periodically rotating your JWT secret in production environments.
+
+    **CORS Configuration (`CORS_ORIGINS`):**
+    The API implements Cross-Origin Resource Sharing (CORS) to control which web applications can access its resources. The allowed origins are configured via the `CORS_ORIGINS` environment variable.
+
+    *   **Configuration:** Set `CORS_ORIGINS` in your `.env` file to a comma-separated list of allowed frontend URLs.
+        Example: `CORS_ORIGINS=http://localhost:3001,https://your-frontend-domain.com`
+    *   **Default Behavior:** If `CORS_ORIGINS` is not set or is empty, the API will effectively disallow all cross-origin requests by default, enhancing security.
+    *   **Credentials:** CORS is configured to allow credentials (e.g., cookies, authorization headers) to be sent with cross-origin requests.
+
+    **Recommendations for `JWT_SECRET`:**
+    *   **Strength:** Use a strong, random string of at least 32 characters (e.g., 64 characters for better security).
+    *   **Generation:** You can generate a suitable secret using a command like:
+        ```bash
+        node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+        ```
+    *   **Environment Loading:** The application is configured to load `JWT_SECRET` from environment variables. It also includes a startup check in `src/main.ts` to ensure this variable is defined and meets a minimum length requirement, preventing the application from starting with an insecure configuration.
+    *   **Never Hardcode:** Do not hardcode the secret directly in your source code.
+    *   **Rotation:** Consider a strategy for periodically rotating your JWT secret in production environments.
+
+## Security Enhancements
+
+### Password Policy
+To enhance user account security, the API enforces a strong password policy for user registration and password updates. Passwords must adhere to the following complexity requirements:
+
+*   Minimum length of 8 characters.
+*   Maximum length of 12 characters.
+*   At least one uppercase letter (A-Z).
+*   At least one lowercase letter (a-z).
+*   At least one number (0-9).
+*   At least one special character (e.g., `!@#$%^&*()_+-=[]{};':"\|,<.>/?`).
+
+These rules are enforced using `@Matches` decorator from `class-validator` in the relevant DTOs (e.g., `src/user/dto/create-user.dto.ts`).
 
 4.  **Database Setup:**
-    The application uses SQLite by default, with the database file `db/waiting_room.sqlite`. TypeORM's `synchronize: true` is enabled for development, which automatically creates/updates the database schema on application start. For production, it's recommended to use TypeORM migrations.
+    The application now uses PostgreSQL. TypeORM migrations are used to manage the database schema.
+
+    **PostgreSQL Configuration:**
+    Ensure your PostgreSQL server is running and accessible. The connection details are configured via environment variables.
+
+    **TypeORM Migrations:**
+    For production readiness, `synchronize` is set to `false`. Database schema changes should be managed through TypeORM migrations.
+
+    *   **Generate a new migration:**
+        ```bash
+        npm run typeorm:migration:generate <MigrationName>
+        ```
+        Replace `<MigrationName>` with a descriptive name for your migration (e.g., `InitialSchema`, `AddUserTable`). This command will create a new migration file in `src/db/migrations`.
+
+    *   **Run pending migrations:**
+        ```bash
+        npm run typeorm:migration:run
+        ```
+        This command will execute all pending migrations, updating your database schema.
+
+    *   **Revert the last migration:**
+        ```bash
+        npm run typeorm:migration:revert
+        ```
+        Use this command with caution, as it will revert the last applied migration.
 
 ## Running the Application
 
@@ -96,6 +164,9 @@ npm run start:prod
 ```
 
 ### Running with Docker
+This section outlines how to run the application using Docker.
+
+#### Docker Image (Single Container)
 1.  **Build the Docker image:**
     ```bash
     docker build -t waiting-room-api .
@@ -105,6 +176,85 @@ npm run start:prod
     docker run -p 3000:3000 --env-file ./.env waiting-room-api
     ```
     The `--env-file ./.env` flag passes your local `.env` variables into the container.
+
+#### Docker Compose Setup (Multi-service Environment)
+For local development with all services (API, PostgreSQL, Redis) running in Docker containers, use Docker Compose.
+
+1.  **Ensure `.env` file is configured:**
+    Make sure you have a `.env` file at the project root with all necessary environment variables as specified in `.env.example`.
+
+2.  **Start the environment:**
+    This command builds the `api` service image (if not already built) and starts all defined services in detached mode.
+    ```bash
+    docker-compose up -d
+    ```
+
+3.  **Stop the environment:**
+    This command stops and removes all containers, networks, and volumes created by `docker-compose up`.
+    ```bash
+    docker-compose down
+    ```
+
+4.  **View logs for a specific service (e.g., `api`):**
+    ```bash
+    docker-compose logs -f api
+    ```
+    Replace `api` with `db` or `cache` to view logs for other services.
+
+5.  **Rebuild and restart services (after code changes or `Dockerfile` updates):**
+    ```bash
+    docker-compose up -d --build
+    ```
+
+6.  **Accessing services:**
+    *   API: `http://localhost:3000`
+    *   PostgreSQL: Accessible from the `api` service via hostname `db` on port `5432`.
+    *   Redis: Accessible from the `api` service via hostname `cache` on port `6379`.
+
+## Redis Caching (Optional)
+The API integrates Redis for caching frequently accessed data, improving response times and reducing database load.
+
+### Configuration
+Redis caching is configured via environment variables in your `.env` file:
+
+-   `REDIS_HOST`: The hostname or IP address of your Redis server (e.g., `localhost`, `127.0.0.1`).
+-   `REDIS_PORT`: The port number of your Redis server (e.g., `6379`).
+-   `REDIS_PASSWORD`: (Optional) The password for your Redis server, if authentication is required.
+-   `REDIS_TTL`: The default time-to-live (TTL) for cached items in seconds (e.g., `3600` for 1 hour).
+
+**Example `.env` configuration:**
+```
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=
+REDIS_TTL=3600
+```
+
+### Cached Endpoints/Methods
+Currently, the following service method is cached:
+-   `WaitingRoomService.findRoomById(id: string)`: Fetches room details by ID. This endpoint is frequently accessed and its data is relatively static unless a room is updated.
+
+### Cache Invalidation Considerations
+For cached data to remain consistent, appropriate cache invalidation strategies are crucial. While full implementation of complex invalidation is beyond the scope of this optional step, the following considerations are in place:
+-   **Direct Invalidation on Write Operations**: The cache for a specific room (`room_<id>`) is explicitly invalidated (deleted) whenever a room is updated, deleted, a player joins, leaves, or a join request is approved/declined, or a game starts. This ensures that subsequent reads fetch the most up-to-date data from the database.
+-   **TTL-based Expiration**: Cached items automatically expire after the `REDIS_TTL` duration, ensuring stale data is eventually removed.
+
+## Logging
+The application uses `winston` for comprehensive logging, configured to output structured JSON logs to the console.
+
+### Configuration
+Logging behavior can be controlled via environment variables in your `.env` file:
+
+-   `LOG_LEVEL`: Sets the minimum level of messages to log.
+    -   **Available Levels**: `error`, `warn`, `info`, `debug`, `verbose`
+    -   **Default**: `info`
+    -   **Example**: `LOG_LEVEL=debug` will show debug, info, warn, and error messages.
+
+### Viewing Logs
+Logs are output to the standard output (console). In a production environment, these logs can be easily collected by log management systems (e.g., ELK stack, Splunk, CloudWatch Logs) due to their structured JSON format.
+
+### Contextual Logging
+Key services and controllers include contextual information in logs (e.g., method name, user ID, request ID) to aid in debugging and tracing.
 
 ## API Endpoints
 
@@ -138,6 +288,19 @@ $ npm run test:e2e
 
 # test coverage
 $ npm run test:cov
+
+### End-to-end Tests with Coverage
+
+To run the end-to-end tests and generate a coverage report:
+
+```bash
+npm run test:e2e -- --coverage
+```
+The coverage report will be available in the `coverage/` directory.
+
+### Test Database Setup (for E2E Tests)
+
+The end-to-end tests require a running PostgreSQL instance configured as per the `.env` file. The test environment automatically handles the creation of a test schema, running migrations, and cleaning up the database before and after the test suite execution via `test/global-setup.ts` and `test/global-teardown.ts`.
 ```
 
 ## Compile and run the project

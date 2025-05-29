@@ -29,6 +29,7 @@ Best practices for Agentic LLM software development assistance.
 - **Testing (TDD Focus)**: Write unit tests before/alongside implementation (e.g., `*.test.js`). Cover primary/edge cases.
 - **Broader Tests**: Note if integration/E2E tests are relevant for broad changes.
 - **Difficult Issues**: If stuck (3-5 tries), summarize attempts/failures before consulting.
+- **Debugging**: When debugging errors in deep call stacks where the symptom is likely distant from the root cause, employ "Call Stack Bisection": iteratively select a function call roughly midway between your current suspected earliest point of failure and the error location. Guide inspection of the program state at the entry of this midpoint function. If the state is already incorrect, the bug lies in the earlier half of the stack; if correct, it's in the later half (or within the midpoint function itself). Update your search boundaries accordingly and repeat this halving process to rapidly narrow down to the function where the state first becomes erroneous, thereby localizing the bug's origin more efficiently than linear tracing. This requires the call stack, error details, and a means to assess program state at chosen points.
 - **Dependency Management**: Use project package manager. Specify versions. Update lock files.
 - **Error Handling**: Robust error handling: specific messages, logging, graceful failure.
 - **Code Comments**: For complex logic, non-obvious decisions, TODOs. Avoid over-commenting.
