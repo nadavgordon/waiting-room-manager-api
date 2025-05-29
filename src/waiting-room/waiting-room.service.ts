@@ -197,12 +197,12 @@ export class WaitingRoomService {
     }
 
     let newPlayerStatus: RoomPlayerStatus;
-    if (!room.isPublic && room.approvalRequired) {
+    if (room.approvalRequired) {
       newPlayerStatus = RoomPlayerStatus.PENDING;
-      this.logger.log(`User ${userId} join request for room ${roomId} set to PENDING (private, approval required).`, 'WaitingRoomService');
+      this.logger.log(`User ${userId} join request for room ${roomId} set to PENDING (approval required).`, 'WaitingRoomService');
     } else {
       newPlayerStatus = RoomPlayerStatus.ACTIVE;
-      this.logger.log(`User ${userId} joined room ${roomId} as ACTIVE (public or no approval required).`, 'WaitingRoomService');
+      this.logger.log(`User ${userId} joined room ${roomId} as ACTIVE (no approval required).`, 'WaitingRoomService');
     }
 
     const roomPlayer = this.roomPlayerRepository.create({

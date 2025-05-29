@@ -20,6 +20,6 @@ export const AppDataSource = new DataSource({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_DATABASE,
   entities: [Room, User, RoomPlayer],
-  migrations: ['src/db/migrations/*.ts'],
+  migrations: ['dist/db/migrations/*.js'],
   synchronize: false,
 });

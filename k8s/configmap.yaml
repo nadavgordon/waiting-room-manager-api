@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-config
+data:
+  PORT: "3000"
+  LOG_LEVEL: "debug"
+  CORS_ORIGINS: "http://localhost:3000,http://localhost:4200"
+  REDIS_TTL: "3600"
+  DB_HOST: "postgres-service"
+  DB_PORT: "5432"
+  DB_SYNCHRONIZE: "false"
+  DB_LOGGING: "false"
+  REDIS_HOST: "redis-service"
+  REDIS_PORT: "6379"

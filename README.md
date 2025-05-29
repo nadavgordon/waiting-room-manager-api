@@ -368,3 +368,81 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+
+## Kubernetes Local Development with Kind
+
+This section outlines how to set up and run the Waiting Room Manager API on a local Kubernetes cluster using Kind (Kubernetes in Docker).
+
+### Prerequisites
+
+*   **Docker**: Required for Kind to run Kubernetes nodes as Docker containers.
+*   **Kind**: A tool for running local Kubernetes clusters using Docker container "nodes".
+    *   Installation: Follow the official Kind documentation: [https://kind.sigs.k8s.io/docs/user/quick-start/#installation](https://kind.sigs.k8s.io/docs/user/quick-start/#installation)
+*   **kubectl**: The Kubernetes command-line tool for running commands against Kubernetes clusters.
+    *   Installation: Follow the official kubectl documentation: [https://kubernetes.io/docs/tasks/tools/install-kubectl/](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
+
+### Setup and Usage
+
+1.  **Create a local Kind cluster:**
+    ```bash
+    kind create cluster --name waiting-room-dev
+    ```
+
+2.  **Build the API Docker image locally:**
+    Ensure you are in the project root directory.
+    ```bash
+    docker build -t waiting-room-api:local .
+    ```
+
+3.  **Load the API Docker image into the Kind cluster:**
+    This makes the locally built image available to the Kind cluster nodes.
+    ```bash
+    kind load docker-image waiting-room-api:local --name waiting-room-dev
+    ```
+
+4.  **Create Kubernetes Secrets:**
+    The application requires secrets for `JWT_SECRET`, `DB_USERNAME`, `DB_PASSWORD`, and `DB_DATABASE`. **Do not commit actual secret values to version control.**
+    You can create these secrets using `kubectl`:
+
+    ```bash
+    kubectl create secret generic api-secret \
+      --from-literal=JWT_SECRET='your_super_secret_jwt_key_here' \
+      --from-literal=DB_USERNAME='your_db_username' \
+      --from-literal=DB_PASSWORD='your_db_password' \
+      --from-literal=DB_DATABASE='your_db_database'
+    ```
+    Replace the placeholder values with your actual secrets.
+
+5.  **Apply all Kubernetes manifests:**
+    Navigate to the project root and apply the manifests located in the `k8s/` directory.
+    ```bash
+    kubectl apply -f k8s/
+    ```
+    This command will deploy the API, PostgreSQL, and Redis services and deployments/statefulsets, along with the ConfigMap.
+
+6.  **Verify Pods and Services:**
+    Check the status of your deployed pods and services:
+    ```bash
+    kubectl get pods
+    kubectl get svc
+    ```
+
+7.  **Access the API:**
+    To access the API from your local machine, use port-forwarding:
+    ```bash
+    kubectl port-forward svc/api-service 3000:3000
+    ```
+    The API will then be accessible at `http://localhost:3000`.
+
+8.  **View Logs:**
+    To view logs for the API deployment:
+    ```bash
+    kubectl logs -f deployment/api-deployment
+    ```
+    Replace `api-deployment` with `postgres-statefulset-0` or `redis-deployment` to view logs for other services.
+
+9.  **Tear down the Kind cluster:**
+    When you are done, you can delete the Kind cluster to clean up resources:
+    ```bash
+    kind delete cluster --name waiting-room-dev
+    ```
