@@ -124,5 +124,5 @@ dist
 *.njsproj
 *.sln
 *.sw?
-.windsurf/
-.roo/
+.windsurf
+.roo
