@@ -78,7 +78,7 @@ task_definition:
     core_steps:
       - step_id: "API-CORE-ENHANCEMENTS"
         description: "Implement Core API Production Readiness Enhancements"
-        status: "pending"
+        status: "done"
         notes: ""
         sub_steps:
           - "Execute DB-SETUP: Transition to PostgreSQL & Implement Migrations (as previously detailed in thought process: install pg, update TypeORM config, synchronize:false, configure migrations path, generate initial migration, add package.json scripts, document, update .env.example)."
@@ -93,7 +93,7 @@ task_definition:
 
       - step_id: "DOCKER-COMPOSE-SETUP"
         description: "Stage 1: Setup Docker Compose for Local Development"
-        status: "pending"
+        status: "done"
         notes: ""
         sub_steps:
           - "Create `docker-compose.yml` at the project root."
@@ -107,7 +107,7 @@ task_definition:
           - "Document how to start (`docker-compose up -d`), stop (`docker-compose down`), view logs (`docker-compose logs -f api`), and manage the local environment using Docker Compose in `README.md`."
       - step_id: "KIND-LOCAL-K8S"
         description: "Stage 2: Develop Kubernetes Manifests & Test Locally with Kind"
-        status: "pending"
+        status: "done"
         notes: ""
         sub_steps:
           - "Create a `k8s/` directory at the project root."
@@ -127,7 +127,7 @@ task_definition:
           - "Thoroughly test the full application deployment on the local Kind cluster, including inter-service communication and data persistence for PostgreSQL."
       - step_id: "CLOUD-K8S-PREP"
         description: "Stage 3: Plan and Prepare for Cloud Kubernetes Deployment"
-        status: "pending"
+        status: "cancelled"
         notes: ""
         sub_steps:
           - "Research and formally select a target managed Kubernetes service (e.g., AWS EKS, Google GKE, Azure AKS) if not already definitively chosen."

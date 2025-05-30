@@ -9,9 +9,14 @@ import { WaitingRoomGateway } from './waiting-room.gateway';
 import { LoggerModule } from '../common/logger/logger.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Room, RoomPlayer, User]), LoggerModule],
-  controllers: [WaitingRoomController],
-  providers: [WaitingRoomService, WaitingRoomGateway],
-  exports: [WaitingRoomService], // Export if other modules need direct access
+  imports: [
+    // Registers TypeORM entities (`Room`, `RoomPlayer`, `User`) for this module.
+    // This makes their respective repositories available for dependency injection within `WaitingRoomModule`.
+    TypeOrmModule.forFeature([Room, RoomPlayer, User]),
+    LoggerModule, // Integrates the custom logging service for all waiting room related operations.
+  ],
+  controllers: [WaitingRoomController], // `WaitingRoomController` handles HTTP API requests related to rooms.
+  providers: [WaitingRoomService, WaitingRoomGateway], // `WaitingRoomService` contains core business logic; `WaitingRoomGateway` manages WebSocket communication.
+  exports: [WaitingRoomService], // Exports `WaitingRoomService` to allow other modules to interact with waiting room logic.
 })
 export class WaitingRoomModule {}

@@ -24,7 +24,7 @@
 # Waiting Room Manager API
 
 ## Project Overview
-This project implements a RESTful API for managing multiplayer game waiting rooms. It allows users to create, join, and manage game sessions before they start, incorporating robust authentication and a refined database schema.
+This project implements a robust and scalable API for managing multiplayer game waiting rooms. It provides comprehensive features for user authentication, room management, and real-time communication, ensuring a seamless experience for players. The API is built with a focus on security, performance, and ease of deployment.
 
 ## Features
 - **User Authentication**: Register and log in users using JWT.
@@ -36,17 +36,22 @@ This project implements a RESTful API for managing multiplayer game waiting room
   - Leave rooms or cancel pending join requests.
   - Start games (only by room host, with player count validation).
   - Delete rooms (only by room host).
-- **Relational Database Design**: Uses TypeORM with SQLite (easily configurable for PostgreSQL/MySQL) for managing `Room`, `User`, and `RoomPlayer` entities.
+- **Database Management**: Utilizes TypeORM with PostgreSQL for managing `Room`, `User`, and `RoomPlayer` entities, with migrations for schema control.
+- **Real-time Communication**: WebSocket integration for instant updates on room status and player changes.
 - **Containerization**: Docker setup for easy deployment.
 - **API Documentation**: Swagger/OpenAPI for interactive API exploration.
+- **Global Exception Handling**: Centralized error handling for consistent API responses.
 
 ## Technologies Used
 - **Backend**: NestJS (Node.js, TypeScript)
-- **Database**: TypeORM with SQLite (can be configured for PostgreSQL, MySQL)
+- **Database**: TypeORM with PostgreSQL
 - **Authentication**: JWT (JSON Web Tokens), Passport.js, bcrypt
 - **Validation**: Class-validator, Class-transformer
 - **Containerization**: Docker
 - **API Documentation**: Swagger (OpenAPI)
+- **Real-time Communication**: WebSockets, Socket.IO
+- **Caching**: Redis
+- **Logging**: Winston
 
 ## Setup
 
@@ -69,43 +74,41 @@ This project implements a RESTful API for managing multiplayer game waiting room
     ```
 
 3.  **Environment Variables:**
-    Create a `.env` file in the project root and add the following:
+    Create a `.env` file in the project root and populate it with the necessary environment variables. A `.env.example` file is provided for reference.
+
     ```
     PORT=3000
-    JWT_SECRET=_your_super_secret_jwt_key_here_ # IMPORTANT: Change this in production!
-    CORS_ORIGINS=http://localhost:3001,https://your-frontend-domain.com # Adjust as needed for your frontend
+    JWT_SECRET=_your_super_secret_jwt_key_here_ # IMPORTANT: Change this in production! Use a strong, random string of at least 32 characters. You can generate one using `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
+
+    # Database (PostgreSQL) Configuration
+    DB_TYPE=postgres
+    DB_HOST=db
+    DB_PORT=5432
+    DB_USERNAME=testuser
+    DB_PASSWORD=testpassword
+    DB_DATABASE=waiting_room_db
+
+    # PostgreSQL service credentials (used by the 'db' service in docker-compose)
+    POSTGRES_USER=testuser
+    POSTGRES_PASSWORD=testpassword
+    POSTGRES_DB=waiting_room_db
+
+    # Logging Configuration
+    LOG_LEVEL=info # Set to error, warn, info, debug, or verbose. Default is info.
+
+    # Redis Cache Configuration
+    REDIS_HOST=cache
+    REDIS_PORT=6379
+    REDIS_PASSWORD= # Optional: Set if your Redis instance requires a password
+    REDIS_TTL=3600 # Cache TTL in seconds (e.g., 1 hour)
     ```
 
-    **JWT_SECRET Importance:**
-    The `JWT_SECRET` is crucial for signing and verifying JSON Web Tokens (JWTs) used for user authentication. A weak or easily guessable secret compromises the security of your application, allowing attackers to forge valid tokens and impersonate users.
-
-    **Recommendations for `JWT_SECRET`:**
-    *   **Strength:** Use a strong, random string of at least 32 characters (e.g., 64 characters for better security).
-    *   **Generation:** You can generate a suitable secret using a command like:
-        ```bash
-        node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-        ```
-    *   **Environment Loading:** The application is configured to load `JWT_SECRET` from environment variables. It also includes a startup check in `src/main.ts` to ensure this variable is defined and meets a minimum length requirement, preventing the application from starting with an insecure configuration.
-    *   **Never Hardcode:** Do not hardcode the secret directly in your source code.
-    *   **Rotation:** Consider a strategy for periodically rotating your JWT secret in production environments.
-
-    **CORS Configuration (`CORS_ORIGINS`):**
-    The API implements Cross-Origin Resource Sharing (CORS) to control which web applications can access its resources. The allowed origins are configured via the `CORS_ORIGINS` environment variable.
-
-    *   **Configuration:** Set `CORS_ORIGINS` in your `.env` file to a comma-separated list of allowed frontend URLs.
-        Example: `CORS_ORIGINS=http://localhost:3001,https://your-frontend-domain.com`
-    *   **Default Behavior:** If `CORS_ORIGINS` is not set or is empty, the API will effectively disallow all cross-origin requests by default, enhancing security.
-    *   **Credentials:** CORS is configured to allow credentials (e.g., cookies, authorization headers) to be sent with cross-origin requests.
-
-    **Recommendations for `JWT_SECRET`:**
-    *   **Strength:** Use a strong, random string of at least 32 characters (e.g., 64 characters for better security).
-    *   **Generation:** You can generate a suitable secret using a command like:
-        ```bash
-        node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-        ```
-    *   **Environment Loading:** The application is configured to load `JWT_SECRET` from environment variables. It also includes a startup check in `src/main.ts` to ensure this variable is defined and meets a minimum length requirement, preventing the application from starting with an insecure configuration.
-    *   **Never Hardcode:** Do not hardcode the secret directly in your source code.
-    *   **Rotation:** Consider a strategy for periodically rotating your JWT secret in production environments.
+    **Important Notes on Environment Variables:**
+    *   **`JWT_SECRET`**: Crucial for signing and verifying JWTs. Ensure it's a strong, random string (at least 32 characters). The application includes a startup check in `src/main.ts` to enforce a minimum length. Never hardcode this in your source code.
+    *   **`CORS_ORIGINS`**: Configure this with a comma-separated list of allowed frontend URLs (e.g., `http://localhost:3001,https://your-frontend-domain.com`). If not set, CORS will be restrictive by default.
+    *   **Database Variables**: Ensure `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`, and `DB_DATABASE` match your PostgreSQL setup.
+    *   **Redis Variables**: Configure `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD` (if applicable), and `REDIS_TTL` for caching.
+    *   **`LOG_LEVEL`**: Adjust this to control the verbosity of application logs.
 
 ## Security Enhancements
 

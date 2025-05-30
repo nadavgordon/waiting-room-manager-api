@@ -10,6 +10,11 @@ import { JwtAuthGuard } from './jwt-auth.guard';
 export class AuthController {
   constructor(private authService: AuthService) {}
 
+  /**
+   * Handles user registration.
+   * This endpoint allows new users to create an account with a username and password.
+   * The password policy is enforced via `CreateUserDto` validation.
+   */
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Register a new user account' })
@@ -26,6 +31,11 @@ export class AuthController {
     return this.authService.register(createUserDto.username, createUserDto.password);
   }
 
+  /**
+   * Handles user login and JWT token issuance.
+   * Upon successful validation of credentials, a JWT access token is returned,
+   * which clients can use for subsequent authenticated requests.
+   */
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Authenticate user and receive JWT access token' })

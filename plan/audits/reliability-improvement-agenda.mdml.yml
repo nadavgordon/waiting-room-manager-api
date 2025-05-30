@@ -1,0 +1,192 @@
+mdml_version: "Agenda-1.4"
+document_type: AgendaInstance
+
+agenda_metadata:
+  name: "Waiting Room Manager API - Reliability Improvement Agenda"
+  version: "1.0"
+  goal: "To address identified reliability risks and enhance the robustness and stability of the Waiting Room Manager API, ensuring data integrity, improved availability, and graceful handling of failures."
+  creation_date: "2025-05-30"
+  last_updated_date: "2025-05-30"
+  authors:
+    - name: "Roo (AI Technical Leader)"
+      role: "Architect / Planner"
+  status: "active"
+  scope_summary: "This agenda covers implementing explicit database transactions, enhancing database and cache connection resilience, improving health check probes, adding graceful application shutdown, addressing concurrency issues, implementing rate limiting, strengthening database-level constraints, and formalizing operational strategies for cloud deployment."
+  target_audience: "Backend Developers, DevOps Engineers"
+  estimated_duration: "To be determined (requires detailed task breakdown and resource allocation)"
+  related_documents:
+    - doc_id: "WRM-API-RELIABILITY-AUDIT"
+      description: "Comprehensive Reliability Audit Report (this session's output)"
+      location: "N/A (current conversation context)"
+    - doc_id: "WRM-PRODUCTION-READINESS-AGENDA"
+      description: "Original Production Readiness Agenda"
+      location: "plan/production-readiness-agenda.mdml.yml"
+    - doc_id: "WRM-IMPROVEMENTS-AGENDA"
+      description: "Previous API Improvements Agenda"
+      location: "plan/waiting-room-manager-api-improvements-agenda.mdml.yml"
+    - doc_id: "WRM-API-BLUEPRINT"
+      description: "Waiting Room Manager API Blueprint"
+      location: "plan/waiting-room-manager-api-blueprint.mdml.yml"
+
+executor_persona:
+  role: "Senior Backend Developer & DevOps Engineer"
+  expertise_level: "Proficient in NestJS, TypeORM, PostgreSQL, Redis, Docker, Kubernetes, and secure, resilient coding practices."
+  responsibilities:
+    - "Implement all API enhancements and configuration changes as outlined in the core steps."
+    - "Ensure all changes are thoroughly tested (unit, integration, E2E) to validate reliability improvements."
+    - "Document new configurations, operational procedures, and design decisions."
+    - "Proactively communicate progress, challenges, and potential issues."
+  communication_style: "Clear, concise, with proactive updates on progress and potential issues."
+  tools_and_technologies:
+    - "NestJS, TypeORM, PostgreSQL, Redis"
+    - "Docker, Kubernetes, kubectl"
+    - "Jest (for testing)"
+    - "Git for version control"
+
+task_context:
+  project_background: "The Waiting Room Manager API has undergone a comprehensive reliability audit, building upon previous production readiness and improvement initiatives. While many good practices are in place, critical areas for reliability enhancement have been identified."
+  problem_statement: "The recent reliability audit identified significant risks, including the lack of explicit database transaction management for multi-step operations, insufficient connection resilience for external dependencies (PostgreSQL, Redis), limited graceful shutdown capabilities, and potential concurrency issues. These gaps could lead to data inconsistencies, service outages, and operational challenges under load or during transient failures."
+  user_stories_or_scenarios:
+    - story_id: "OPS-RELIABILITY-001"
+      as_a: "DevOps Engineer"
+      i_want_to: "ensure the API recovers gracefully from transient database or cache outages"
+      so_that: "manual intervention is minimized and service uptime is maximized."
+    - story_id: "USER-DATA-INTEGRITY-001"
+      as_a: "User"
+      i_want_to: "be confident that my room and player data is always consistent"
+      so_that: "I don't encounter corrupted game states or missing records."
+    - story_id: "OPS-DEPLOYMENT-001"
+      as_a: "DevOps Engineer"
+      i_want_to: "deploy new versions of the API without service interruption or data loss"
+      so_that: "updates are seamless and reliable."
+  business_value_or_impact: "Implementing these reliability improvements will significantly enhance the API's stability, data integrity, and availability. This reduces operational overhead, minimizes potential data loss, improves user trust, and prepares the application for robust performance in production environments."
+
+task_definition:
+  overall_task_description: "Systematically implement targeted reliability improvements for the Waiting Room Manager API, focusing on critical areas identified in the recent audit to ensure robust data integrity, enhanced availability, and resilient operation against failures."
+  key_deliverables:
+    - "Source code updates with explicit database transactions."
+    - "Updated database and Redis connection configurations with retry logic and pooling."
+    - "Enhanced health check endpoints with dependency validation."
+    - "Implementation of graceful application shutdown."
+    - "Code changes addressing potential concurrency issues."
+    - "Implementation of rate limiting for critical API endpoints."
+    - "Updated database schema with stronger constraints (if applicable)."
+    - "Updated Kubernetes manifests for increased redundancy."
+    - "Documentation for database backup and cloud rollback strategies."
+  instructions:
+    preliminary_steps:
+      - "Review the detailed reliability audit report to fully understand all identified risks and recommendations."
+      - "Familiarize with TypeORM's transaction management features (e.g., QueryRunner, @Transaction decorator)."
+      - "Research best practices for connection pooling and retry mechanisms for PostgreSQL and Redis clients in NestJS."
+      - "Understand NestJS graceful shutdown hooks and Kubernetes lifecycle management."
+    core_steps:
+      - step_id: "DB-TXN-IMPL"
+        description: "Implement Explicit Database Transactions"
+        sub_steps:
+          - "Refactor `createRoom` in [`src/waiting-room/waiting-room.service.ts`](src/waiting-room/waiting-room.service.ts:30) to use a transaction for creating Room and RoomPlayer."
+          - "Refactor `deleteRoom` in [`src/waiting-room/waiting-room.service.ts`](src/waiting-room/waiting-room.service.ts:129) to use a transaction for deleting RoomPlayers and Room."
+          - "Refactor `startGame` in [`src/waiting-room/waiting-room.service.ts`](src/waiting-room/waiting-room.service.ts:312) to use a transaction for updating Room status and declining pending players."
+          - "Review `joinRoom`, `approveOrDeclineJoinRequest`, `leaveRoom` in [`src/waiting-room/waiting-room.service.ts`](src/waiting-room/waiting-room.service.ts:158) for transactional needs, especially for race conditions."
+          - "Ensure all multi-write operations are atomic."
+      - step_id: "CONN-RESILIENCE-ENH"
+        description: "Enhance Database and Cache Connection Resilience"
+        sub_steps:
+          - "Configure TypeORM DataSource ([`src/db/data-source.ts`](src/db/data-source.ts:0)) with connection pooling settings (e.g., `extra.max`, `extra.min`, `extra.idleTimeoutMillis`)."
+          - "Implement connection retry logic with exponential backoff for PostgreSQL connection at application startup."
+          - "Configure Redis client in [`src/app.module.ts`](src/app.module.ts:40-51) with retry strategy, connection timeouts, and reconnect logic."
+      - step_id: "HEALTH-PROBE-IMPROVE"
+        description: "Improve Readiness Probe with Dependency Checks"
+        sub_steps:
+          - "Modify `/health/ready` endpoint in [`src/app.controller.ts`](src/app.controller.ts:13-16) to check connectivity to PostgreSQL and Redis."
+          - "Ensure the probe returns a non-200 status if any critical dependency is unavailable."
+      - step_id: "GRACEFUL-SHUTDOWN-IMPL"
+        description: "Implement Graceful Application Shutdown"
+        sub_steps:
+          - "Add NestJS `enableShutdownHooks()` in [`src/main.ts`](src/main.ts:0)."
+          - "Implement `OnModuleDestroy` in relevant services (e.g., `WaitingRoomService`, `LoggerService`) to close database connections, flush logs, and clean up resources."
+          - "Ensure in-flight requests are completed before shutdown."
+      - step_id: "CONCURRENCY-HANDLING"
+        description: "Address Concurrency and Race Conditions"
+        sub_steps:
+          - "Review critical sections in `WaitingRoomService` for potential race conditions (e.g., `joinRoom`, `approveOrDeclineJoinRequest`)."
+          - "Consider implementing optimistic locking or database-level row locking for high-contention operations if necessary."
+      - step_id: "RATE-LIMITING-IMPL"
+        description: "Implement Rate Limiting"
+        sub_steps:
+          - "Add rate limiting to critical API endpoints (e.g., `POST /rooms`, `POST /rooms/{roomId}/join`) to prevent abuse."
+          - "Utilize NestJS throttling module or a similar solution."
+      - step_id: "DB-CONSTRAINT-STRENGTHEN"
+        description: "Strengthen Database-Level Constraints"
+        sub_steps:
+          - "Add a unique constraint on `roomId` and `userId` in the `room_players` table to prevent duplicate player entries."
+          - "Consider adding database-level check constraints for enum fields (e.g., `RoomStatus`, `RoomPlayerStatus`) to enforce data integrity at the database layer."
+          - "Add a minimum constraint for `maxPlayers` in the `rooms` table."
+      - step_id: "K8S-REDUNDANCY-REVIEW"
+        description: "Review and Increase Kubernetes Redundancy"
+        sub_steps:
+          - "Update `replicas` count in [`k8s/api-deployment.yaml`](k8s/api-deployment.yaml:8), [`k8s/postgres-statefulset.yaml`](k8s/postgres-statefulset.yaml:9), and [`k8s/redis-deployment.yaml`](k8s/redis-deployment.yaml:8) for production deployments."
+          - "Consider PostgreSQL replication setup for high availability."
+      - step_id: "OPS-STRATEGY-DOC"
+        description: "Document Operational Strategies"
+        sub_steps:
+          - "Define and document a comprehensive database backup and recovery strategy for PostgreSQL."
+          - "Outline a clear rollback strategy for cloud Kubernetes deployments, addressing the previously cancelled step in `production-readiness-agenda.mdml.yml`."
+    post_completion_steps:
+      - "Conduct thorough testing (unit, integration, E2E) to validate all reliability improvements."
+      - "Update relevant documentation (README, API docs, deployment guides) to reflect changes."
+      - "Monitor application performance and error rates in staging/production environments."
+  constraints_and_assumptions:
+    constraints:
+      - "Must continue to use NestJS, TypeORM, PostgreSQL, and Redis."
+      - "Deployment targets remain Docker Compose (local), Kind (local K8s), and a cloud Kubernetes service."
+    assumptions:
+      - "Team has necessary expertise or will acquire it for implementing these changes."
+      - "Cloud environment provides necessary services (managed DB, cache, etc.) for robust configurations."
+  success_metrics_or_evaluation_criteria:
+    - "Zero data inconsistencies observed in critical operations (e.g., room creation, game start)."
+    - "Application recovers gracefully from transient database/cache outages without crashing."
+    - "Readiness probe accurately reflects application and dependency health."
+    - "Application performs graceful shutdown, minimizing resource leaks."
+    - "Rate limiting effectively prevents abuse on configured endpoints."
+    - "Increased uptime and reduced manual intervention in production."
+  acceptance_criteria:
+    - "All core steps are implemented and verified through testing."
+    - "No new critical reliability risks are introduced."
+    - "Documentation is updated to reflect all changes and new operational procedures."
+    - "The API demonstrates improved resilience and data integrity in testing environments."
+
+output_specification:
+  expected_outputs:
+    - output_id: "SRC-CODE-RELIABILITY-ENH"
+      description: "Updated application source code with all reliability improvements."
+      format_or_type: "Git Repository Branch/PR"
+      delivery_method: "Git commit/push."
+    - output_id: "K8S-CONFIG-UPDATED"
+      description: "Updated Kubernetes manifest files reflecting increased replicas and enhanced probes."
+      format_or_type: "YAML files"
+      delivery_method: "Committed to `k8s/` directory."
+    - output_id: "OPS-DOCS-UPDATED"
+      description: "New or updated documentation for database backup and cloud rollback strategies."
+      format_or_type: "Markdown files"
+      delivery_method: "Committed to `plan/` directory."
+  quality_standards_for_output:
+    - "Code: Adheres to NestJS best practices, clean, readable, well-commented, and passes all tests."
+    - "Configuration: Robust, secure, and follows Kubernetes best practices for reliability."
+    - "Tests: High coverage for new/modified logic, reliable, automated, and passing."
+    - "Documentation: Clear, concise, accurate, and actionable for developers and DevOps."
+
+glossary_and_definitions:
+  - term: "Atomicity"
+    definition: "A property of database transactions that ensures all operations within a transaction are completed successfully, or none of them are. It's an 'all or nothing' principle."
+  - term: "Graceful Shutdown"
+    definition: "The process by which an application or service terminates cleanly, releasing resources, completing in-flight requests, and preventing data loss or corruption."
+  - term: "Readiness Probe"
+    definition: "A Kubernetes probe that determines if a container is ready to serve requests. If it fails, Kubernetes removes the pod from service load balancers."
+  - term: "Liveness Probe"
+    definition: "A Kubernetes probe that determines if a container is running. If it fails, Kubernetes restarts the container."
+  - term: "Connection Pooling"
+    definition: "A technique used to manage and reuse database connections, reducing the overhead of opening and closing connections for each request."
+  - term: "Rate Limiting"
+    definition: "A control that limits the number of requests a user or client can make to an API within a given timeframe, preventing abuse and DoS attacks."
+  - term: "Optimistic Locking"
+    definition: "A concurrency control method used to prevent conflicts when multiple users try to update the same record simultaneously, typically by checking a version number or timestamp."

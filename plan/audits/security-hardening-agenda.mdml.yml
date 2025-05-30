@@ -1,0 +1,163 @@
+mdml_version: "Agenda-1.4"
+document_type: AgendaInstance
+
+agenda_metadata:
+  name: "Security Hardening Agenda for Waiting Room Manager API"
+  version: "1.0"
+  goal: "To enhance the security posture of the Waiting Room Manager API by addressing identified vulnerabilities and implementing best practices."
+  creation_date: "2025-05-30"
+  last_updated_date: "2025-05-30"
+  authors:
+    - name: "Roo"
+      role: "AI Assistant"
+  status: "active"
+  scope_summary: "Implementation of security enhancements across authentication, authorization, WebSocket communication, logging, and infrastructure configuration. Out of scope: full penetration testing, external security audits."
+  target_audience: "Development Team, DevOps Team"
+  estimated_duration: "To be determined (depends on complexity of each task)"
+  related_documents:
+    - doc_id: "WAITING-ROOM-API-BLUEPRINT"
+      description: "Waiting Room Manager API Blueprint"
+      location: "plan/waiting-room-manager-api-blueprint.mdml.yml"
+    - doc_id: "PRODUCTION-READINESS-AGENDA"
+      description: "Production Readiness Agenda"
+      location: "plan/production-readiness-agenda.mdml.yml"
+    - doc_id: "WAITING-ROOM-API-AGENDA"
+      description: "Waiting Room Manager API Agenda"
+      location: "plan/waiting-room-manager-api-agenda.mdml.yml"
+
+executor_persona:
+  role: "Senior Software Engineer"
+  expertise_level: "Expert in NestJS, TypeScript, Security Best Practices, DevOps"
+  responsibilities:
+    - "Implement secure code."
+    - "Write unit and integration tests for security features."
+    - "Update configuration files as needed."
+    - "Update relevant documentation."
+  communication_style: "Concise and professional, with code examples where appropriate."
+  tools_and_technologies:
+    - "NestJS"
+    - "TypeScript"
+    - "TypeORM"
+    - "Passport.js"
+    - "Socket.IO"
+    - "Docker"
+    - "Kubernetes"
+    - "Redis"
+    - "Git"
+    - "Jest"
+
+task_context:
+  project_background: "The Waiting Room Manager API is a backend service for managing waiting rooms, user authentication, and real-time game interactions. It uses NestJS, TypeORM, PostgreSQL, and Redis."
+  problem_statement: "A comprehensive security audit identified several vulnerabilities and areas for improvement in the API's security posture, including WebSocket security, lack of rate limiting, PII logging, and missing security headers. These issues pose risks of unauthorized access, data breaches, and denial-of-service attacks."
+  user_stories_or_scenarios:
+    - story_id: "US-SEC-001"
+      as_a: "User"
+      i_want_to: "Have my account protected from brute-force attacks"
+      so_that: "My credentials are not easily compromised."
+    - story_id: "US-SEC-002"
+      as_a: "Administrator"
+      i_want_to: "Ensure sensitive user data is protected in logs"
+      so_that: "Privacy regulations are met and data leakage is prevented."
+    - story_id: "US-SEC-003"
+      as_a: "Developer"
+      i_want_to: "Ensure WebSocket communication is secure and authenticated"
+      so_that: "Unauthorized actions and information disclosure are prevented."
+  business_value_or_impact: "Improved overall security posture, reduced risk of data breaches and denial-of-service attacks, enhanced user trust, compliance with privacy regulations, and a more robust and maintainable codebase."
+
+task_definition:
+  overall_task_description: "Implement a series of security enhancements to address critical and high-priority vulnerabilities identified in the comprehensive security audit of the Waiting Room Manager API. This includes hardening WebSocket communication, implementing brute-force protection, improving JWT lifecycle management, securing logging practices, and adding essential HTTP security headers."
+  key_deliverables:
+    - "Updated source code with security fixes."
+    - "New/updated unit and integration tests for security features."
+    - "Updated configuration files (e.g., .env.example, k8s manifests) as necessary."
+    - "Updated documentation for implemented security features."
+  instructions:
+    preliminary_steps:
+      - "Review the detailed security audit findings provided in the previous conversation."
+      - "Familiarize with NestJS security best practices for each identified area (e.g., WebSocket guards, rate limiting modules)."
+    core_steps:
+      - step_id: "SEC-01-WS"
+        description: "Harden WebSocket Security"
+        sub_steps:
+          - "Implement authentication for WebSocket connections (e.g., using JWT in handshake)."
+          - "Implement authorization for WebSocket message handlers (e.g., custom guards for `@SubscribeMessage` methods)."
+          - "Validate input payloads for WebSocket messages (e.g., `roomId` as UUID)."
+      - step_id: "SEC-02-BRUTE-FORCE"
+        description: "Implement Brute-Force Protection"
+        sub_steps:
+          - "Add rate limiting to `/auth/login` and `/auth/register` endpoints."
+          - "Consider implementing account lockout mechanisms after multiple failed login attempts."
+      - step_id: "SEC-03-JWT"
+        description: "Enhance JWT Management"
+        sub_steps:
+          - "Implement a JWT refresh token mechanism to improve user experience and token revocation capabilities."
+          - "Develop a token revocation strategy (e.g., blacklist, short-lived access tokens with longer-lived refresh tokens)."
+          - "Remove the redundant `?? ''` fallback for `JWT_SECRET` in `src/auth/jwt.strategy.ts`."
+      - step_id: "SEC-04-LOGGING"
+        description: "Improve Logging Security"
+        sub_steps:
+          - "Mask or remove Personally Identifiable Information (PII) like usernames and user IDs from production logs."
+          - "Implement log sanitization to prevent log injection attacks."
+      - step_id: "SEC-05-CACHE"
+        description: "Secure Cache (Redis) Configuration"
+        sub_steps:
+          - "Ensure Redis connection always requires a password in production environments; do not allow connection without a password."
+      - step_id: "SEC-06-HEADERS"
+        description: "Add HTTP Security Headers"
+        sub_steps:
+          - "Implement Content-Security-Policy (CSP) to mitigate XSS and data injection attacks."
+          - "Add X-Content-Type-Options, X-Frame-Options, and Strict-Transport-Security (HSTS) headers."
+      - step_id: "SEC-07-DEPS"
+        description: "Review and Correct Dependency Versions"
+        sub_steps:
+          - "Investigate and correct the `bcrypt` version in `package.json` to a known stable and secure version."
+          - "Clean up `package.json` to remove duplicate `dependencies` and `devDependencies` sections."
+      - step_id: "SEC-08-AUTHZ"
+        description: "Refine Authorization Model (Future Consideration)"
+        sub_steps:
+          - "Evaluate the feasibility and benefits of migrating to a more scalable role-based access control (RBAC) or attribute-based access control (ABAC) system for complex permission scenarios."
+    post_completion_steps:
+      - "Conduct thorough manual and automated testing of all implemented security features."
+      - "Update relevant documentation (e.g., README, API documentation, security section in blueprint)."
+      - "Submit changes for code review by the development team."
+      - "Recommend a re-audit by a security expert or automated tools."
+  constraints_and_assumptions:
+    constraints:
+      - "Must maintain existing API functionality and user experience where possible."
+      - "Must continue to use the NestJS framework."
+      - "Changes should be backward-compatible with existing client applications unless explicitly agreed upon."
+    assumptions:
+      - "Existing infrastructure (PostgreSQL, Redis, Kubernetes) can support new security features."
+      - "Kubernetes secrets are securely managed outside the repository and will be correctly applied in production."
+      - "Development team has the necessary expertise to review and deploy security enhancements."
+  success_metrics_or_evaluation_criteria:
+    - "All identified critical and high-priority vulnerabilities are addressed and verified."
+    - "No new security vulnerabilities are introduced by the changes."
+    - "Automated unit, integration, and E2E tests for new security features pass consistently."
+    - "Compliance with relevant security best practices (e.g., OWASP Top 10 for APIs)."
+    - "Reduced PII exposure in logs."
+  acceptance_criteria:
+    - "A follow-up security audit (manual or automated) shows no critical or high findings related to the addressed areas."
+    - "All new security features are functional, stable, and performant."
+    - "Code review passes with no major security or architectural concerns."
+    - "Documentation is updated to reflect security changes."
+
+output_specification:
+  expected_outputs:
+    - output_id: "UPDATED-SOURCE-CODE"
+      description: "Source code for the Waiting Room Manager API with all security enhancements implemented."
+      format_or_type: "Git Repository"
+      delivery_method: "Pushed to feature branch for review."
+    - output_id: "UPDATED-CONFIG"
+      description: "Updated environment variable examples and Kubernetes secret templates."
+      format_or_type: "YAML/Text Files"
+      delivery_method: "Committed to repository."
+    - output_id: "UPDATED-DOCS"
+      description: "Documentation reflecting the implemented security features and changes."
+      format_or_type: "Markdown/API Docs"
+      delivery_method: "Committed to repository."
+  quality_standards_for_output:
+    - "Code adheres to project coding standards, linting rules, and best practices."
+    - "All existing and new tests pass without failures."
+    - "Changes are well-documented with clear comments and explanations."
+    - "Performance impact of security features is minimal and acceptable."

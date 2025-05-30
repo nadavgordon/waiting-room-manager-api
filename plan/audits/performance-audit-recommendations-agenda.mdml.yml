@@ -1,0 +1,158 @@
+mdml_version: "Agenda-1.4"
+document_type: AgendaInstance
+
+agenda_metadata:
+  name: "Waiting Room Manager API - Performance Optimization Agenda"
+  version: "1.0"
+  goal: "To implement critical performance optimizations and address identified bottlenecks in the Waiting Room Manager API, ensuring scalability, responsiveness, and resource efficiency."
+  creation_date: "2025-05-30"
+  last_updated_date: "2025-05-30"
+  authors:
+    - name: "Roo (AI Architect)"
+      role: "Architect / Performance Auditor"
+  status: "draft"
+  scope_summary: "In scope: Database indexing, caching strategy enhancements, WebSocket communication optimization, Kubernetes resource tuning, and transaction implementation. Out of scope: Major architectural refactoring (e.g., microservices split), deep application profiling beyond current analysis."
+  target_audience: "Backend Developers, DevOps Engineers"
+  estimated_duration: "1-2 Sprints"
+  related_documents:
+    - doc_id: "WRM-BLUEPRINT"
+      description: "Waiting Room Manager API Blueprint"
+      location: "plan/waiting-room-manager-api-blueprint.mdml.yml"
+    - doc_id: "WRM-PROD-READINESS-AGENDA"
+      description: "Production Readiness Agenda"
+      location: "plan/production-readiness-agenda.mdml.yml"
+    - doc_id: "WRM-IMPROVEMENTS-AGENDA"
+      description: "API Improvements Agenda"
+      location: "plan/waiting-room-manager-api-improvements-agenda.mdml.yml"
+
+executor_persona:
+  role: "Senior Backend Developer & DevOps Engineer"
+  expertise_level: "Proficient in NestJS, TypeORM, PostgreSQL, Redis, Docker, and Kubernetes."
+  responsibilities:
+    - "Implement performance optimizations as specified."
+    - "Ensure changes are thoroughly tested and do not introduce regressions."
+    - "Update relevant documentation and configurations."
+    - "Monitor performance metrics post-implementation."
+  communication_style: "Concise, technical, with clear updates on progress and challenges."
+  tools_and_technologies:
+    - "NestJS, TypeORM, PostgreSQL, Redis"
+    - "Docker, Kubernetes (kubectl)"
+    - "Jest (for testing)"
+    - "Git"
+
+task_context:
+  project_background: "The Waiting Room Manager API provides core functionality for managing game waiting rooms. A recent performance audit identified several areas for optimization to ensure the API can handle increasing load and provide a responsive user experience."
+  problem_statement: "While the API has a solid foundation, it exhibits potential performance bottlenecks related to database query efficiency (missing indexes, sequential queries), limited caching scope, inefficient WebSocket broadcasting, and basic Kubernetes resource management (lack of HA/autoscaling)."
+  user_stories_or_scenarios:
+    - story_id: "US-PERF-001"
+      as_a: "Game Player"
+      i_want_to: "experience fast and real-time updates in waiting rooms"
+      so_that: "my pre-game experience is smooth and responsive."
+    - story_id: "US-OPS-002"
+      as_a: "DevOps Engineer"
+      i_want_to: "ensure the API scales efficiently under high load"
+      so_that: "operational costs are minimized and service availability is maximized."
+  business_value_or_impact: "Implementing these optimizations will lead to improved API responsiveness, higher throughput, better resource utilization, and enhanced system stability, directly contributing to a superior user experience and reduced operational overhead."
+
+task_definition:
+  overall_task_description: "Implement a series of targeted performance optimizations across the Waiting Room Manager API's database interactions, caching mechanisms, real-time communication, and Kubernetes deployment configurations based on the recent performance audit findings."
+  key_deliverables:
+    - "Updated database schema with new indexes."
+    - "Modified `WaitingRoomService` with enhanced caching and transaction management."
+    - "Refactored `WaitingRoomGateway` for efficient WebSocket broadcasting."
+    - "Updated Kubernetes manifests for improved resource management and autoscaling."
+    - "Documentation updates reflecting performance changes and new configurations."
+  instructions:
+    preliminary_steps:
+      - "Review the detailed performance audit report to fully understand each recommendation."
+      - "Ensure local development environment is set up and functional."
+      - "Familiarize with TypeORM migrations for database schema changes."
+    core_steps:
+      - step_id: "DB-OPT-001"
+        description: "Implement Database Indexing"
+        sub_steps:
+          - "Add composite index on `roomId` and `status` columns in `RoomPlayer` entity ([`src/waiting-room/entities/room-player.entity.ts`](src/waiting-room/entities/room-player.entity.ts))."
+          - "Add composite index on `userId` and `roomId` columns in `RoomPlayer` entity."
+          - "Add index on `isPublic` column in `Room` entity ([`src/waiting-room/entities/room.entity.ts`](src/waiting-room/entities/room.entity.ts))."
+          - "Generate and apply new TypeORM migration for these index changes."
+      - step_id: "DB-OPT-002"
+        description: "Implement Database Transactions"
+        sub_steps:
+          - "Wrap `createRoom` method in `WaitingRoomService` with a TypeORM transaction to ensure atomicity of room and host-player creation ([`src/waiting-room/waiting-room.service.ts:30`](src/waiting-room/waiting-room.service.ts:30))."
+          - "Review `joinRoom` and `approveOrDeclineJoinRequest` methods for potential transaction wrapping if multiple critical writes occur."
+      - step_id: "CACHE-OPT-001"
+        description: "Enhance Caching Strategy"
+        sub_steps:
+          - "Implement caching for `findAllRooms` endpoint results in `WaitingRoomService` ([`src/waiting-room/waiting-room.service.ts:61`](src/waiting-room/waiting-room.service.ts:61)), using cache keys that incorporate pagination parameters (e.g., `rooms_public_${page}_${limit}`)."
+          - "Consider caching frequently accessed aggregate data, such as active player counts for a room."
+          - "Review and potentially adjust the default Redis TTL in `src/app.module.ts` or implement per-key TTLs for different data types based on volatility."
+      - step_id: "WS-OPT-001"
+        description: "Optimize WebSocket Communication"
+        sub_steps:
+          - "Modify `emitRoomUpdate` in `WaitingRoomGateway` ([`src/waiting-room/waiting-room.gateway.ts:23`](src/waiting-room/waiting-room.gateway.ts:23)) to use `this.server.to(room.id).emit('roomUpdated', room);` to target only relevant clients."
+          - "Investigate sending partial/delta updates for room objects over WebSockets instead of the full object to reduce payload size."
+          - "Replace `console.log` statements in `WaitingRoomGateway` with `LoggerService` calls for consistent logging."
+      - step_id: "K8S-OPT-001"
+        description: "Improve Kubernetes Resource Management"
+        sub_steps:
+          - "Implement Horizontal Pod Autoscaler (HPA) for `api-deployment` ([`k8s/api-deployment.yaml`](k8s/api-deployment.yaml)) based on CPU utilization."
+          - "Review and potentially increase memory/CPU limits for Redis ([`k8s/redis-deployment.yaml`](k8s/redis-deployment.yaml)) and PostgreSQL ([`k8s/postgres-statefulset.yaml`](k8s/postgres-statefulset.yaml)) based on expected production load."
+          - "Address image version inconsistencies between `docker-compose.yml` and K8s manifests for Redis and PostgreSQL."
+          - "Document considerations for implementing high availability (HA) for Redis and PostgreSQL in a production Kubernetes environment (e.g., using managed services or cluster setups)."
+    post_completion_steps:
+      - "Conduct load testing to validate performance improvements."
+      - "Set up comprehensive monitoring for API response times, database query performance, cache hit ratios, and resource utilization."
+      - "Update `README.md` and other relevant documentation with details on performance optimizations and new configurations."
+  constraints_and_assumptions:
+    constraints:
+      - "Must adhere to existing NestJS, TypeORM, PostgreSQL, and Redis stack."
+      - "Changes should be backward-compatible with existing API contracts where possible."
+    assumptions:
+      - "Monitoring tools will be available to track performance metrics post-deployment."
+      - "Database and cache infrastructure can support proposed changes (e.g., adding indexes)."
+  success_metrics_or_evaluation_criteria:
+    - "Average API response time for `findAllRooms` reduced by X% under load."
+    - "Cache hit ratio for `findRoomById` and new list caches is > Y%."
+    - "WebSocket message payload size reduced by Z% for common updates."
+    - "Kubernetes pods scale appropriately under varying load conditions."
+    - "No new performance regressions introduced."
+  acceptance_criteria:
+    - "All core steps outlined in this agenda are implemented and verified."
+    - "Performance metrics show measurable improvements as per success criteria."
+    - "All tests pass, and no new critical bugs are introduced."
+    - "Relevant documentation is updated and accurate."
+
+output_specification:
+  expected_outputs:
+    - output_id: "DB-SCHEMA-UPDATE"
+      description: "Updated database schema with new indexes via TypeORM migrations."
+      format_or_type: "SQL migration files, updated entity files"
+      delivery_method: "Git commit/push"
+    - output_id: "API-CODE-UPDATE"
+      description: "Modified source code for `WaitingRoomService` and `WaitingRoomGateway`."
+      format_or_type: "TypeScript files"
+      delivery_method: "Git commit/push"
+    - output_id: "K8S-CONFIG-UPDATE"
+      description: "Updated Kubernetes deployment manifests for API, Redis, and PostgreSQL."
+      format_or_type: "YAML files"
+      delivery_method: "Git commit/push"
+    - output_id: "PERF-DOCS"
+      description: "Documentation updates on performance optimizations and configurations."
+      format_or_type: "Markdown files (e.g., README.md)"
+      delivery_method: "Git commit/push"
+  quality_standards_for_output:
+    - "Code adheres to NestJS best practices, is clean, readable, and well-commented."
+    - "Database migrations are idempotent and reversible."
+    - "Kubernetes configurations are robust, secure, and follow best practices."
+    - "All changes are covered by existing or new tests."
+    - "Documentation is clear, concise, accurate, and actionable."
+
+glossary_and_definitions:
+  - term: "N+1 Problem"
+    definition: "A database query anti-pattern where an application makes N additional queries to the database for each result of an initial query, leading to performance degradation."
+  - term: "HPA"
+    definition: "Horizontal Pod Autoscaler - a Kubernetes feature that automatically scales the number of pods in a deployment based on observed CPU utilization or other select metrics."
+  - term: "TTL"
+    definition: "Time To Live - a mechanism that limits the lifespan or validity of data in a computer or computer network."
+  - term: "Atomicity (Database)"
+    definition: "A property of database transactions that guarantees that all operations within the transaction are completed successfully; otherwise, the transaction is aborted, and the database is left unchanged."

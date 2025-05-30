@@ -1,0 +1,137 @@
+mdml_version: "Agenda-1.4"
+document_type: AgendaInstance
+
+agenda_metadata:
+  name: "Code Quality Improvement for Waiting Room Manager API"
+  version: "1.0"
+  goal: "To enhance the code quality of the waiting-room-manager-api project based on audit findings, improving maintainability, readability, and adherence to best practices."
+  creation_date: "2025-05-30"
+  last_updated_date: "2025-05-30"
+  authors:
+    - name: "Roo"
+      role: "AI Architect/Engineer"
+  status: "active"
+  scope_summary: "In scope: Refactoring of identified complex methods, standardization of logging, improvement of internal code comments, and enhancement of WebSocket gateway. Out of scope: Major architectural changes, new feature development."
+  target_audience: "Development Team, Project Lead"
+  estimated_duration: "To be determined based on complexity of refactoring"
+  related_documents:
+    - doc_id: "CodeQualityAudit-20250530"
+      description: "Comprehensive Code Quality Audit Report"
+      location: "This session's output"
+    - doc_id: "production-readiness-agenda.mdml.yml"
+      description: "Project's Production Readiness Agenda"
+      location: "plan/production-readiness-agenda.mdml.yml"
+    - doc_id: "waiting-room-manager-api-blueprint.mdml.yml"
+      description: "Project's Architectural Blueprint"
+      location: "plan/waiting-room-manager-api-blueprint.mdml.yml"
+
+executor_persona:
+  role: "Software Engineer"
+  expertise_level: "Expert in NestJS, TypeScript, TypeORM, and WebSocket development"
+  responsibilities:
+    - "Implement code refactoring as per instructions."
+    - "Ensure changes adhere to existing project standards and best practices."
+    - "Write clear and concise code comments."
+    - "Verify functionality after changes."
+  communication_style: "Concise and technical, providing code examples and diffs."
+  tools_and_technologies:
+    - "NestJS Framework"
+    - "TypeScript"
+    - "TypeORM"
+    - "Socket.IO"
+    - "ESLint and Prettier"
+    - "Git for version control"
+
+task_context:
+  project_background: "The waiting-room-manager-api is a NestJS-based backend service managing waiting rooms for a game or application, including user authentication, room creation/management, and real-time player updates via WebSockets."
+  problem_statement: "A recent code quality audit identified several areas for improvement, including overly complex service methods, inconsistent logging in the WebSocket gateway, scattered cache invalidation logic, and a lack of detailed inline comments for complex business logic. Addressing these issues will improve the maintainability, readability, and overall robustness of the codebase."
+  user_stories_or_scenarios:
+    - story_id: "DEV-MAINT-001"
+      as_a: "Developer"
+      i_want_to: "Understand complex service logic quickly"
+      so_that: "I can efficiently debug and extend features."
+    - story_id: "DEV-MAINT-002"
+      as_a: "Developer"
+      i_want_to: "Ensure consistent logging across the application"
+      so_that: "I can effectively monitor and troubleshoot issues."
+  business_value_or_impact: "Improved code quality leads to reduced technical debt, faster feature development, fewer bugs, and easier onboarding for new developers, ultimately enhancing the long-term sustainability and reliability of the API."
+
+task_definition:
+  overall_task_description: "Perform targeted refactoring and improvements to the waiting-room-manager-api codebase based on the detailed code quality audit report. This includes breaking down complex service methods, standardizing logging, centralizing cache management, and adding necessary inline comments."
+  key_deliverables:
+    - "Refactored `WaitingRoomService` methods (e.g., `joinRoom`, `approveOrDeclineJoinRequest`) into smaller, more focused private methods."
+    - "Standardized logging in `WaitingRoomGateway` to use `LoggerService`."
+    - "Implementation of a centralized cache management service or utility."
+    - "Addition of clear inline comments for complex business logic sections."
+    - "Improved type safety in `WaitingRoomGateway` for message payloads."
+  instructions:
+    preliminary_steps:
+      - "Review the 'Code Quality Audit Report' to understand all identified areas for improvement."
+      - "Familiarize with the existing codebase, especially `src/waiting-room/waiting-room.service.ts` and `src/waiting-room/waiting-room.gateway.ts`."
+    core_steps:
+      - step_id: "REF-SVC-001"
+        description: "Refactor complex methods in `WaitingRoomService`."
+        sub_steps:
+          - "Analyze `joinRoom` and `approveOrDeclineJoinRequest` for logical sub-sections."
+          - "Extract validation logic into separate private helper methods."
+          - "Extract player status update logic into separate private helper methods."
+          - "Ensure all extracted methods have clear responsibilities and appropriate return types."
+      - step_id: "LOG-GW-001"
+        description: "Standardize logging in `WaitingRoomGateway`."
+        sub_steps:
+          - "Inject `LoggerService` into `WaitingRoomGateway`."
+          - "Replace all `console.log` statements with calls to `this.logger.log`, `this.logger.warn`, or `this.logger.error` as appropriate."
+      - step_id: "CACHE-MGMT-001"
+        description: "Centralize cache invalidation logic."
+        sub_steps:
+          - "Consider creating a dedicated `CacheService` or a utility function to encapsulate cache invalidation patterns."
+          - "Replace scattered `this.cacheManager.del()` calls with calls to the new centralized mechanism."
+      - step_id: "DOC-CODE-001"
+        description: "Add inline comments for complex logic."
+        sub_steps:
+          - "Identify sections in `WaitingRoomService` and other core services that perform non-obvious or multi-step business logic."
+          - "Add concise, explanatory comments (e.g., JSDoc for private methods, inline comments for complex conditional blocks) to clarify intent and reasoning."
+      - step_id: "TYPE-GW-001"
+        description: "Improve type safety in `WaitingRoomGateway`."
+        sub_steps:
+          - "Define specific interfaces or types for WebSocket message payloads (e.g., for `emitRoomPlayersUpdate`'s `players` parameter)."
+          - "Update method signatures to use these new types instead of `any`."
+    post_completion_steps:
+      - "Run all existing unit and e2e tests to ensure no regressions."
+      - "Perform a final code review to ensure adherence to all guidelines."
+      - "Update relevant documentation (if any) affected by the changes."
+  constraints_and_assumptions:
+    constraints:
+      - "Must maintain existing API functionality and contracts."
+      - "Must not introduce new external dependencies unless explicitly approved."
+      - "Changes must be compatible with NestJS v10 and TypeORM v0.3."
+    assumptions:
+      - "Existing test suite is sufficient to catch regressions."
+      - "No major architectural changes are required at this stage."
+  success_metrics_or_evaluation_criteria:
+    - "Reduced cognitive complexity of refactored methods (measurable by static analysis tools if available)."
+    - "Consistent use of `LoggerService` across all core components."
+    - "Centralized cache invalidation logic is implemented and used."
+    - "Increased clarity of complex code sections through comments."
+    - "No new `any` types introduced, and existing `any` types in gateway are replaced with specific types."
+    - "All existing tests pass after changes."
+  acceptance_criteria:
+    - "Code review of refactored components is approved by a senior developer."
+    - "CI/CD pipeline (if applicable) passes successfully."
+    - "Manual testing confirms no functional regressions."
+
+output_specification:
+  expected_outputs:
+    - output_id: "REFACTORED-CODE"
+      description: "Modified source code files reflecting the improvements."
+      format_or_type: "TypeScript source files (.ts)"
+      delivery_method: "Git commit(s) to a feature branch."
+    - output_id: "CODE-REVIEW-SUMMARY"
+      description: "Summary of changes made and justification for refactoring decisions."
+      format_or_type: "Markdown text"
+      delivery_method: "Included in the pull request description."
+  quality_standards_for_output:
+    - "All code changes adhere to ESLint and Prettier configurations."
+    - "Refactored code is more readable and maintainable than original."
+    - "No new bugs or performance regressions are introduced."
+    - "All automated tests pass."

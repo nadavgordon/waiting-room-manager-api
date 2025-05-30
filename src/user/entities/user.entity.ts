@@ -14,7 +14,7 @@ export class User {
   username: string;
 
   @Column()
-  passwordHash: string; // Store hashed passwords
+  passwordHash: string; // Stores the securely hashed password.
 
   @ApiProperty({ description: 'Timestamp when the user account was created', example: '2023-01-01T12:00:00Z' })
   @CreateDateColumn()
@@ -24,9 +24,13 @@ export class User {
   @UpdateDateColumn()
   updatedAt: Date;
 
+  // Establishes a one-to-many relationship: one user can host multiple rooms.
+  // `room => room.host` defines the inverse side of the relationship in the `Room` entity.
   @OneToMany(() => Room, room => room.host)
   hostedRooms: Room[];
 
+  // Establishes a one-to-many relationship: one user can be a player in multiple rooms.
+  // This relationship is managed through the `RoomPlayer` entity, which links users to specific rooms.
   @OneToMany(() => RoomPlayer, roomPlayer => roomPlayer.player)
-  roomPlayers: Room[];
+  roomPlayers: RoomPlayer[];
 }

@@ -10,34 +10,38 @@ import { GetUser } from '../auth/get-user.decorator';
 import { PaginationDto, PaginatedResponseDto } from '../common/dto/pagination.dto';
 
 @ApiTags('WaitingRoom')
-@ApiExtraModels(PaginatedResponseDto, Room)
+@ApiExtraModels(PaginatedResponseDto, Room) // Registers DTOs for Swagger schema generation.
 @Controller('rooms')
 export class WaitingRoomController {
   constructor(private readonly waitingRoomService: WaitingRoomService) {}
 
+  /**
+   * Creates a new waiting room.
+   * This endpoint is protected by JWT authentication, ensuring only authenticated users can create rooms.
+   * The host of the room is automatically set to the authenticated user.
+   */
   @Post()
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('access-token')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a new waiting room' })
   @ApiBody({ type: CreateRoomDto, description: 'Details for creating a new room' })
-  @ApiResponse({
-    status: 201,
-    description: 'The room has been successfully created.',
-    type: Room,
-  })
+  @ApiResponse({ status: 201, description: 'The room has been successfully created.', type: Room })
   @ApiResponse({ status: 400, description: 'Bad Request. Invalid input data.' })
   @ApiResponse({ status: 401, description: 'Unauthorized. Missing or invalid JWT token.' })
   async create(@Body() createRoomDto: CreateRoomDto, @GetUser('userId') hostId: string): Promise<Room> {
     return this.waitingRoomService.createRoom(createRoomDto, hostId);
   }
 
+  /**
+   * Retrieves a paginated list of waiting rooms.
+   * This endpoint supports filtering based on room visibility (public/private) and
+   * whether the authenticated user is the host or an active player in a room.
+   */
   @Get()
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('access-token')
-  @ApiOperation({
-    summary: 'Get all waiting rooms with pagination. Filters by public/private and host association if userId is provided.',
-  })
+  @ApiOperation({ summary: 'Get all waiting rooms with pagination. Filters by public/private and host association if userId is provided.' })
   @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number (default: 1)', example: 1 })
   @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items per page (default: 10, max: 100)', example: 10 })
   @ApiResponse({
@@ -48,30 +52,17 @@ export class WaitingRoomController {
         { $ref: getSchemaPath(PaginatedResponseDto) },
         {
           properties: {
-            data: {
-              type: 'array',
-              items: { $ref: getSchemaPath(Room) },
-            },
+            data: { type: 'array', items: { $ref: getSchemaPath(Room) } },
+            totalItems: { type: 'number', example: 1 },
+            itemsPerPage: { type: 'number', example: 10 },
+            currentPage: { type: 'number', example: 1 },
+            totalPages: { type: 'number', example: 1 },
           },
         },
       ],
       example: {
-        data: [
-          {
-            id: 'a1b2c3d4-e5f6-7890-1234-567890abcdef',
-            name: 'Public Game Room',
-            isPublic: true,
-            approvalRequired: false,
-            maxPlayers: 10,
-            status: 'waiting',
-            hostId: 'b1c2d3e4-f5a6-7890-1234-567890abcdef',
-            createdAt: '2023-01-01T12:00:00Z',
-            updatedAt: '2023-01-01T12:00:00Z',
-          },
-        ],
-        total: 1,
-        limit: 10,
-        page: 1,
+        data: [{ id: 'a1b2c3d4-e5f6-7890-1234-567890abcdef', name: 'Public Game Room', isPublic: true, approvalRequired: false, maxPlayers: 10, status: 'waiting', hostId: 'b1c2d3e4-f5a6-7890-1234-567890abcdef', createdAt: '2023-01-01T12:00:00Z', updatedAt: '2023-01-01T12:00:00Z' }],
+        totalItems: 1, itemsPerPage: 10, currentPage: 1, itemCount: 1, totalPages: 1,
       },
     },
   })
@@ -80,11 +71,15 @@ export class WaitingRoomController {
     @GetUser('userId') userId: string,
     @Query() paginationDto: PaginationDto,
   ): Promise<PaginatedResponseDto<Room>> {
-    const { page = 1, limit = 10 } = paginationDto; // Provide default values
+    const { page = 1, limit = 10 } = paginationDto;
     const { rooms, total } = await this.waitingRoomService.findAllRooms(userId, page, limit);
     return new PaginatedResponseDto(rooms, total, limit, page);
   }
 
+  /**
+   * Retrieves details of a specific waiting room by its ID.
+   * This endpoint allows any authenticated user to view room details.
+   */
   @Get(':id')
   @ApiOperation({ summary: 'Get a specific waiting room by ID' })
   @ApiParam({ name: 'id', description: 'The ID of the room to retrieve', type: 'string', format: 'uuid', example: 'a1b2c3d4-e5f6-7890-1234-567890abcdef' })
@@ -94,6 +89,10 @@ export class WaitingRoomController {
     return this.waitingRoomService.findRoomById(id);
   }
 
+  /**
+   * Updates specific fields of an existing waiting room.
+   * Only the room's host is authorized to perform this operation.
+   */
   @Patch(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('access-token')
@@ -113,6 +112,10 @@ export class WaitingRoomController {
     return this.waitingRoomService.updateRoom(id, updateRoomDto, hostId);
   }
 
+  /**
+   * Deletes a waiting room.
+   * This operation is restricted to the room's host.
+   */
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('access-token')
@@ -126,6 +129,11 @@ export class WaitingRoomController {
     return this.waitingRoomService.deleteRoom(id, hostId);
   }
 
+  /**
+   * Allows an authenticated user to join a specific waiting room.
+   * If the room has `approvalRequired` set to true, the user's status will be `PENDING`.
+   * Otherwise, the user will directly become an `ACTIVE` player.
+   */
   @Post(':roomId/join')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('access-token')
@@ -143,6 +151,10 @@ export class WaitingRoomController {
     return this.waitingRoomService.joinRoom(roomId, userId);
   }
 
+  /**
+   * Allows the room host to approve or decline a pending join request from another user.
+   * This endpoint is critical for managing access to private or approval-required rooms.
+   */
   @Post(':roomId/pending-requests/:pendingUserId/respond')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('access-token')
@@ -155,7 +167,7 @@ export class WaitingRoomController {
   @ApiResponse({ status: 401, description: 'Unauthorized. Missing or invalid JWT token.' })
   @ApiResponse({ status: 403, description: 'Forbidden (only host can respond).' })
   @ApiResponse({ status: 404, description: 'Room not found.' })
-  @HttpCode(HttpStatus.CREATED)
+  @HttpCode(HttpStatus.OK)
   async respondToJoinRequest(
     @Param('roomId', ParseUUIDPipe) roomId: string,
     @Param('pendingUserId', ParseUUIDPipe) pendingUserId: string,
@@ -170,6 +182,10 @@ export class WaitingRoomController {
     );
   }
 
+  /**
+   * Allows an authenticated user to leave a room or cancel a pending join request.
+   * This endpoint handles the user's departure from a room, updating their status accordingly.
+   */
   @Post(':roomId/leave')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('access-token')
@@ -187,6 +203,11 @@ export class WaitingRoomController {
     return this.waitingRoomService.leaveRoom(roomId, userId);
   }
 
+  /**
+   * Allows the room host to start the game in a room.
+   * This action transitions the room's status from `WAITING` to `IN_PROGRESS`
+   * and automatically declines any remaining pending join requests.
+   */
   @Post(':roomId/start')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('access-token')
@@ -197,7 +218,7 @@ export class WaitingRoomController {
   @ApiResponse({ status: 401, description: 'Unauthorized. Missing or invalid JWT token.' })
   @ApiResponse({ status: 403, description: 'Forbidden (only host can start)' })
   @ApiResponse({ status: 404, description: 'Room not found.' })
-  @HttpCode(HttpStatus.CREATED)
+  @HttpCode(HttpStatus.OK)
   startGame(
     @Param('roomId') roomId: string,
     @GetUser('userId') hostId: string,

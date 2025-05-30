@@ -1,0 +1,147 @@
+mdml_version: "Agenda-1.4"
+document_type: AgendaInstance
+
+agenda_metadata:
+  name: "Logging & Monitoring Improvements for Waiting Room Manager API"
+  version: "1.0"
+  goal: "To enhance the logging and monitoring capabilities of the `waiting-room-manager-api` project, addressing identified deficiencies and aligning with observability best practices."
+  creation_date: "2025-05-30"
+  last_updated_date: "2025-05-30"
+  authors:
+    - name: "Roo"
+      role: "AI Architect/Engineer"
+  status: "draft"
+  scope_summary: "Focus on improving existing logging consistency, implementing robust health checks, introducing request correlation, and integrating foundational metrics for the `waiting-room-manager-api`."
+  target_audience: "Development Team, Operations Team"
+  estimated_duration: "2-3 Sprints"
+  related_documents:
+    - doc_id: "waiting-room-manager-api-blueprint"
+      description: "Project blueprint outlining system architecture and initial observability considerations."
+      location: "plan/waiting-room-manager-api-blueprint.mdml.yml"
+    - doc_id: "production-readiness-agenda"
+      description: "Agenda detailing steps for production readiness, including logging."
+      location: "plan/production-readiness-agenda.mdml.yml"
+
+executor_persona:
+  role: "Senior Software Engineer / Architect"
+  expertise_level: "Expert in Node.js, NestJS, Observability (Logging, Metrics, Tracing), Kubernetes."
+  responsibilities:
+    - "Analyze codebase for observability gaps."
+    - "Design and propose solutions for logging, metrics, and health checks."
+    - "Implement code changes following best practices."
+    - "Ensure solutions are scalable and maintainable."
+  communication_style: "Concise, technical, and professional, with clear explanations and code references."
+  tools_and_technologies:
+    - "NestJS"
+    - "Winston"
+    - "TypeORM"
+    - "Redis"
+    - "Kubernetes"
+    - "Prometheus"
+    - "OpenTelemetry (consideration)"
+
+task_context:
+  project_background: "The `waiting-room-manager-api` is a NestJS application designed to manage waiting rooms, user authentication, and real-time game interactions. It serves as a backend for a waiting room system."
+  problem_statement: "The current logging and monitoring capabilities of the `waiting-room-manager-api` have critical gaps. These include inconsistent logger usage in error handling, superficial health checks that do not verify dependencies, and a complete absence of key observability components like metrics, distributed tracing, and request correlation. These deficiencies hinder effective operational visibility, debugging, and adherence to production readiness standards."
+  business_value_or_impact: "Improved system stability and reliability, faster identification and resolution of production issues, enhanced operational visibility for performance and health, and better alignment with enterprise-grade observability standards."
+
+task_definition:
+  overall_task_description: "Develop and implement targeted enhancements to the `waiting-room-manager-api`'s logging and monitoring infrastructure. This involves standardizing logger usage, fortifying health checks with dependency verification, introducing request correlation for end-to-end traceability, and integrating foundational operational metrics."
+  key_deliverables:
+    - "Refactored `AllExceptionsFilter` to use the centralized `LoggerService`."
+    - "Enhanced `/health/ready` endpoint with checks for database and Redis connectivity."
+    - "Implementation of a request correlation ID mechanism, with IDs included in all log entries."
+    - "Integration of basic Prometheus metrics (e.g., request count, latency, error rates)."
+    - "Adjusted logging configuration for production environments."
+    - "Removal of redundant logger initialization in `main.ts`."
+    - "Updated documentation reflecting new observability features."
+  instructions:
+    preliminary_steps:
+      - "Review existing `LoggerService` and `AllExceptionsFilter` implementations."
+      - "Familiarize with NestJS `TerminusModule` for health checks."
+      - "Research best practices for request correlation in NestJS."
+      - "Identify key metrics for a NestJS API."
+    core_steps:
+      - step_id: "LOG-01"
+        description: "Refactor AllExceptionsFilter to use LoggerService."
+        sub_steps:
+          - "Modify `src/common/filters/all-exceptions.filter.ts` to accept `LoggerService` via constructor injection."
+          - "Adjust `src/main.ts` to retrieve `AllExceptionsFilter` from the application context or pass `app.get(LoggerService)` during instantiation."
+          - "Verify consistent log output from exceptions."
+      - step_id: "MON-01"
+        description: "Enhance Health Checks with Dependency Verification."
+        sub_steps:
+          - "Install `@nestjs/terminus` and related packages."
+          - "Update `src/app.module.ts` to import `TerminusModule`."
+          - "Modify `src/app.controller.ts` to use `HealthCheckService` and `TypeOrmHealthIndicator` for database checks."
+          - "Implement a custom health indicator for Redis cache connectivity."
+          - "Ensure `/health/ready` endpoint reflects the status of all critical dependencies."
+      - step_id: "OBS-01"
+        description: "Implement Request Correlation IDs."
+        sub_steps:
+          - "Create a NestJS middleware to generate a unique request ID (e.g., UUID) for each incoming request."
+          - "Store the request ID in a request-scoped context (e.g., using `AsyncLocalStorage` or a custom request-scoped provider)."
+          - "Modify `LoggerService` to automatically include the current request ID in all log entries."
+          - "Ensure request ID is propagated across service calls if applicable (e.g., to external services)."
+      - step_id: "MON-02"
+        description: "Integrate Basic Prometheus Metrics."
+        sub_steps:
+          - "Install a NestJS-compatible Prometheus client library."
+          - "Create a dedicated `MetricsModule` to expose a `/metrics` endpoint."
+          - "Implement basic metrics: HTTP request count, request duration (latency), and error rate."
+          - "Consider adding custom business logic metrics if relevant (e.g., room creation count)."
+      - step_id: "CONF-01"
+        description: "Review and Adjust Logging Configuration for Production."
+        sub_steps:
+          - "Ensure `LOG_LEVEL` in `k8s/configmap.yaml` is set to `info` for production deployments."
+          - "Investigate and propose a centralized logging solution (e.g., adding a Winston transport for ELK stack, CloudWatch, or similar) for production environments."
+      - step_id: "CLEAN-01"
+        description: "Remove Redundant Logger Initialization."
+        sub_steps:
+          - "Remove the duplicate `app.useLogger(app.get(LoggerService))` call from `src/main.ts`."
+    post_completion_steps:
+      - "Update `README.md` or a dedicated `OBSERVABILITY.md` with details on logging, metrics, and health checks."
+      - "Conduct integration tests to verify new observability features."
+      - "Monitor logs and metrics in a staging environment."
+  constraints_and_assumptions:
+    constraints:
+      - "Must use NestJS framework."
+      - "Existing core application functionality must not be broken."
+      - "Prioritize operational readiness and diagnosability."
+      - "Avoid introducing significant performance overhead."
+    assumptions:
+      - "Kubernetes environment supports Prometheus scraping of `/metrics` endpoint."
+      - "Database (PostgreSQL) and Redis cache are accessible for health checks."
+      - "Environment variables are correctly configured for different deployment stages."
+  success_metrics_or_evaluation_criteria:
+    - "All unhandled exceptions are logged consistently through the `LoggerService`."
+    - "The `/health/ready` endpoint accurately reflects the operational status of critical dependencies (DB, Redis)."
+    - "All application logs include a unique request correlation ID."
+    - "Key operational metrics (request count, latency, error rate) are exposed via a Prometheus-compatible endpoint."
+    - "Logging configuration is flexible and appropriate for production environments."
+    - "No regressions introduced in existing application functionality."
+    - "Documentation for observability features is clear and up-to-date."
+  acceptance_criteria:
+    - "Code changes are reviewed and approved by the team."
+    - "All unit and integration tests pass."
+    - "Observability features are validated in a staging environment."
+
+output_specification:
+  expected_outputs:
+    - output_id: "LOG-MON-AGENDA"
+      description: "MDML Agenda detailing the plan for logging and monitoring improvements."
+      format_or_type: "YAML file"
+      delivery_method: "plan/logging-monitoring-improvements-agenda.mdml.yml"
+    - output_id: "MODIFIED-CODE"
+      description: "Updated source code files implementing the logging and monitoring enhancements."
+      format_or_type: "TypeScript files"
+      delivery_method: "File system (e.g., `src/common/filters/all-exceptions.filter.ts`, `src/main.ts`, `src/app.controller.ts`, new modules/files as needed)"
+    - output_id: "UPDATED-DOCS"
+      description: "Documentation reflecting the new observability features."
+      format_or_type: "Markdown file"
+      delivery_method: "File system (e.g., `README.md` or `OBSERVABILITY.md`)"
+  quality_standards_for_output:
+    - "Code adheres to project's ESLint and Prettier configurations."
+    - "New code is well-tested with unit and integration tests where appropriate."
+    - "Documentation is clear, concise, and accurate."
+    - "Changes are modular and follow NestJS best practices."

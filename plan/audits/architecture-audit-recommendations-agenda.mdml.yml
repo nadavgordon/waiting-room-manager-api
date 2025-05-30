@@ -1,0 +1,182 @@
+mdml_version: "Agenda-1.4"
+document_type: AgendaInstance
+
+agenda_metadata:
+  name: "Waiting Room Manager API Architecture Improvement Agenda"
+  version: "1.0"
+  goal: "Address architectural improvement opportunities identified during the comprehensive project audit of the Waiting Room Manager API."
+  creation_date: "2025-05-30"
+  last_updated_date: "2025-05-30"
+  authors:
+    - name: "Roo (AI Assistant)"
+      role: "Architectural Auditor & Planner"
+  status: "active"
+  scope_summary: "This agenda covers implementing specific architectural enhancements and addressing identified deviations from the blueprint. It focuses on improving scalability, data integrity, security, and observability. Out of scope: major refactoring not directly tied to audit findings, new feature development."
+  target_audience: "Development Team, Project Manager, DevOps Team"
+  estimated_duration: "To be determined based on task prioritization and resource allocation."
+  related_documents:
+    - doc_id: "WRM-BLUEPRINT-MDML"
+      description: "The architectural blueprint for the Waiting Room Manager API."
+      location: "plan/waiting-room-manager-api-blueprint.mdml.yml"
+    - doc_id: "WRM-AUDIT-REPORT"
+      description: "Comprehensive Architecture Audit Report (this session's output)."
+      location: "plan/architecture-audit-report.md" # Assuming a separate markdown report will be generated
+
+executor_persona:
+  role: "Senior Software Engineer / Architect"
+  expertise_level: "Expert in NestJS, TypeORM, PostgreSQL, Redis, Docker, Kubernetes, WebSockets, Security, and System Design."
+  responsibilities:
+    - "Implement architectural improvements with high code quality."
+    - "Ensure changes align with existing codebase standards."
+    - "Conduct thorough testing for all modifications."
+    - "Update relevant documentation."
+    - "Communicate progress and potential blockers."
+  communication_style: "Concise, technical, and solution-oriented."
+  tools_and_technologies:
+    - "NestJS (TypeScript)"
+    - "TypeORM"
+    - "PostgreSQL"
+    - "Redis"
+    - "Socket.IO"
+    - "Docker"
+    - "Kubernetes"
+    - "Git"
+    - "Jest (for testing)"
+
+task_context:
+  project_background: "The Waiting Room Manager API is a backend service for managing game waiting rooms, user authentication, and real-time interactions, designed for containerized deployment."
+  problem_statement: "A recent comprehensive architecture audit identified several areas for improvement in the Waiting Room Manager API, including real-time scalability, data integrity, observability, and minor blueprint deviations. These issues need to be addressed to enhance the system's robustness, scalability, and maintainability."
+  user_stories_or_scenarios:
+    - story_id: "ARCH-001"
+      as_a: "Developer"
+      i_want_to: "Ensure WebSocket events are synchronized across multiple API instances"
+      so_that: "Players in the same room always receive real-time updates, regardless of which API instance they are connected to."
+    - story_id: "ARCH-002"
+      as_a: "Database Administrator"
+      i_want_to: "Ensure data consistency during complex operations"
+      so_that: "The database remains in a valid state even if an operation fails midway or concurrent operations occur."
+    - story_id: "ARCH-003"
+      as_a: "Operations Engineer"
+      i_want_to: "Monitor the application's performance and behavior comprehensively"
+      so_that: "I can quickly diagnose issues and understand system bottlenecks."
+  business_value_or_impact: "Improved system reliability and uptime, enhanced user experience through consistent real-time updates, reduced operational overhead due to better observability, and a more robust foundation for future feature development and scaling."
+
+task_definition:
+  overall_task_description: "Implement the identified architectural improvements for the Waiting Room Manager API, focusing on real-time scalability, data integrity, observability, and blueprint alignment."
+  key_deliverables:
+    - "Updated User entity with 'email' field and corresponding migration."
+    - "WebSocket adapter configured for Socket.IO with Redis for multi-instance scaling."
+    - "Implementation of explicit database transactions for critical WaitingRoomService operations."
+    - "Refined database foreign key constraints or application-level handling for user deletion to prevent orphaned records."
+    - "Integration of a distributed tracing solution (e.g., OpenTelemetry)."
+    - "Enhanced health check endpoints to verify critical dependencies."
+    - "Implementation of a refresh token mechanism for authentication."
+    - "Updated documentation (code comments, Swagger) reflecting changes."
+    - "Comprehensive unit and integration tests for all new/modified logic."
+  instructions:
+    preliminary_steps:
+      - "Review the 'Comprehensive Architecture Audit: Waiting Room Manager API' report for detailed findings and recommendations."
+      - "Familiarize with the existing codebase, especially `src/user`, `src/waiting-room`, `src/auth`, `src/main.ts`, and `src/app.module.ts`."
+      - "Ensure development environment is set up and all tests pass before making changes."
+    core_steps:
+      - step_id: "IMPR-001"
+        description: "Update User Entity and Database Migration"
+        sub_steps:
+          - "Add 'email' field to `src/user/entities/user.entity.ts`."
+          - "Generate a new TypeORM migration to add the 'email' column to the 'users' table."
+          - "Update relevant DTOs and services to handle the new 'email' field."
+      - step_id: "IMPR-002"
+        description: "Implement WebSocket Scalability with Redis Adapter"
+        sub_steps:
+          - "Install `socket.io-redis-adapter` or similar package."
+          - "Configure `WaitingRoomGateway` or a global WebSocket adapter in `app.module.ts` to use the Redis adapter."
+          - "Verify real-time updates work correctly across multiple API instances (requires multi-instance deployment for testing)."
+      - step_id: "IMPR-003"
+        description: "Introduce Database Transaction Management"
+        sub_steps:
+          - "Refactor critical methods in `WaitingRoomService` (e.g., `joinRoom`, `startGame`, `approveOrDeclineJoinRequest`) to use TypeORM's `QueryRunner` or `EntityManager.transaction` for atomic operations."
+          - "Ensure proper error handling and rollback mechanisms within transactions."
+      - step_id: "IMPR-004"
+        description: "Address Data Integrity for User Deletion"
+        sub_steps:
+          - "Decide on a strategy for handling `RoomPlayer` and `Room` records when a `User` is deleted (e.g., soft delete users, nullify foreign keys, or implement explicit cleanup logic)."
+          - "Implement the chosen strategy in `UserService` or a dedicated data cleanup service."
+      - step_id: "IMPR-005"
+        description: "Integrate Distributed Tracing"
+        sub_steps:
+          - "Choose an OpenTelemetry SDK for NestJS."
+          - "Configure tracing in `main.ts` or a dedicated module."
+          - "Instrument key services and controllers to emit spans."
+          - "Set up a basic exporter (e.g., console, Jaeger) for verification."
+      - step_id: "IMPR-006"
+        description: "Enhance Health Check Endpoints"
+        sub_steps:
+          - "Modify `/health/ready` endpoint in `AppController` to check database connectivity and Redis connection status."
+          - "Consider adding checks for other critical services if applicable."
+      - step_id: "IMPR-007"
+        description: "Implement Refresh Token Mechanism"
+        sub_steps:
+          - "Design a strategy for refresh token generation, storage, and validation."
+          - "Implement new endpoints and logic in `AuthModule` for token refreshing."
+          - "Ensure proper security measures for refresh tokens (e.g., HTTP-only cookies, rotation)."
+    post_completion_steps:
+      - "Run all unit, integration, and E2E tests to ensure no regressions."
+      - "Update relevant sections of the `waiting-room-manager-api-blueprint.mdml.yml` to reflect implemented changes."
+      - "Update API documentation (Swagger) if new endpoints or DTOs are added/modified."
+      - "Submit a pull request for review."
+  constraints_and_assumptions:
+    constraints:
+      - "Must maintain compatibility with existing NestJS, TypeORM, and other core library versions unless explicitly upgraded."
+      - "Changes should minimize downtime for existing deployments."
+      - "Security best practices must be adhered to at all times."
+    assumptions:
+      - "Access to necessary environment variables (e.g., Redis connection details) will be provided."
+      - "The existing CI/CD pipeline can be adapted to include new testing and deployment steps."
+  success_metrics_or_evaluation_criteria:
+    - "All identified architectural improvement tasks are completed and verified."
+    - "WebSocket real-time updates function correctly across multiple API instances."
+    - "Database consistency is maintained during concurrent and complex operations."
+    - "No orphaned records are created upon user deletion."
+    - "Distributed tracing data is successfully emitted and observable."
+    - "Health check endpoints accurately reflect service health."
+    - "Refresh token mechanism is functional and secure."
+    - "All automated tests pass with acceptable coverage."
+    - "Code review passes with no critical or major issues."
+  acceptance_criteria:
+    - "A new MDML Agenda document outlining the architectural improvements is created."
+    - "All code changes are committed to a feature branch and pass CI checks."
+    - "Demonstration of improved scalability, data integrity, and observability is possible."
+
+output_specification:
+  expected_outputs:
+    - output_id: "ARCH-IMPR-CODE"
+      description: "Source code with implemented architectural improvements."
+      format_or_type: "Git Repository (feature branch)"
+      delivery_method: "Push to remote repository for pull request."
+    - output_id: "DB-MIGRATION"
+      description: "New TypeORM migration script for User entity changes."
+      format_or_type: "TypeScript file"
+      delivery_method: "Included in source code."
+    - output_id: "UPDATED-DOCS"
+      description: "Updated Swagger API documentation and relevant code comments."
+      format_or_type: "Generated HTML/JSON (Swagger), In-code comments"
+      delivery_method: "Accessible via API endpoint, part of source code."
+    - output_id: "TEST-RESULTS"
+      description: "Results of unit, integration, and E2E tests."
+      format_or_type: "Test reports/logs"
+      delivery_method: "Via CI/CD pipeline or local execution."
+  quality_standards_for_output:
+    - "Code adheres to NestJS best practices and project coding standards."
+    - "All new/modified code is covered by automated tests."
+    - "Performance of critical paths is not degraded."
+    - "Security vulnerabilities are not introduced."
+
+glossary_and_definitions:
+  - term: "MDML Agenda"
+    definition: "Markdown Machine Language Agenda - a structured YAML document defining tasks, goals, and execution plans for AI agents."
+  - term: "Race Condition"
+    definition: "A situation where multiple operations access and manipulate the same shared resource concurrently, and the outcome depends on the order of execution, potentially leading to incorrect results."
+  - term: "Distributed Tracing"
+    definition: "A method used to monitor requests as they flow through a distributed system, providing insights into latency, errors, and performance across different services."
+  - term: "Refresh Token"
+    definition: "A long-lived credential used to obtain new access tokens after the short-lived access token expires, improving security by limiting the exposure of access tokens."
