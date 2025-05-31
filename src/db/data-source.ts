@@ -14,12 +14,15 @@ console.log('DB_DATABASE:', process.env.DB_DATABASE);
 
 /**
  * `AppDataSource` is the central TypeORM DataSource configuration for the application.
- * It defines the connection parameters to the PostgreSQL database, registers all
- * TypeORM entities, and specifies the path for database migration files.
+ * It defines the connection parameters to the PostgreSQL database, including connection pooling,
+ * registers all TypeORM entities, and specifies the path for database migration files.
  *
  * This DataSource is primarily used by the TypeORM CLI for managing database schema
  * changes (migrations), ensuring a controlled and versioned approach to database evolution.
  * It loads environment variables using `dotenv` to configure database access securely.
+ *
+ * @property {string} type - Specifies the database type (PostgreSQL).
+ * @property {number} poolSize - Configures the maximum number of connections in the connection pool.
  */
 export const AppDataSource = new DataSource({
   type: 'postgres',
@@ -28,6 +31,7 @@ export const AppDataSource = new DataSource({
   username: process.env.DB_USERNAME,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_DATABASE,
+  poolSize: 20, // Configure connection pooling
   entities: [Room, User, RoomPlayer], // All database entities managed by TypeORM.
   migrations: ['dist/db/migrations/*.js'], // Path to compiled migration files.
   synchronize: false, // Set to `false` in production to prevent data loss; migrations handle schema updates.

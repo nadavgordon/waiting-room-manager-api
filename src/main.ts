@@ -7,6 +7,41 @@ import { HttpAdapterHost } from '@nestjs/core';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { LoggerService } from './common/logger/logger.service';
 import helmet from 'helmet';
+import { AppDataSource } from './db/data-source'; // Import AppDataSource
+
+// Function to initialize DataSource with retry logic
+async function initializeDataSourceWithRetry(
+  logger: LoggerService,
+  maxRetries = 5,
+  initialDelay = 2000, // 2 seconds
+) {
+  let retries = 0;
+  while (retries < maxRetries) {
+    try {
+      logger.log('Attempting to connect to the database...', 'DataSource');
+      await AppDataSource.initialize();
+      logger.log('Database connection established successfully.', 'DataSource');
+      return; // Success
+    } catch (error) {
+      retries++;
+      const delay = initialDelay * Math.pow(2, retries - 1); // Exponential backoff
+      logger.error(
+        `Database connection failed (attempt ${retries}/${maxRetries}). Retrying in ${delay / 1000}s...`,
+        error.stack,
+        'DataSource',
+      );
+      if (retries >= maxRetries) {
+        logger.error(
+          'Max retries reached. Could not connect to the database.',
+          error.stack,
+          'DataSource',
+        );
+        throw error; // Re-throw the error to stop the application
+      }
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+}
 
 async function bootstrap() {
   // Initialize the NestJS application.
@@ -17,7 +52,20 @@ async function bootstrap() {
   });
 
   // Integrate the custom LoggerService for structured and consistent logging across the application.
-  app.useLogger(app.get(LoggerService));
+  const logger = app.get(LoggerService);
+  app.useLogger(logger);
+
+  // Initialize DataSource with retry logic before proceeding
+  try {
+    await initializeDataSourceWithRetry(logger);
+  } catch (error) {
+    logger.error(
+      'Application startup failed due to database connection issues. Exiting.',
+      error.stack,
+      'Bootstrap',
+    );
+    process.exit(1); // Exit if DB connection fails after retries
+  }
 
   // Perform critical security validation for the JWT_SECRET environment variable.
   // This ensures that the application's authentication mechanism is securely configured at startup.
