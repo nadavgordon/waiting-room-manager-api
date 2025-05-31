@@ -7,6 +7,8 @@ import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from '../common/logger/logger.module';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { User } from '../user/entities/user.entity';
 
 @Module({
   imports: [
@@ -18,12 +20,13 @@ import { LoggerModule } from '../common/logger/logger.module';
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET'), // JWT secret from environment variables for security.
-        signOptions: { expiresIn: '60m' }, // Token expiration time, enhancing security by limiting token validity.
+        signOptions: { expiresIn: configService.get<string>('JWT_ACCESS_TOKEN_EXPIRATION_TIME') || '1h' }, // Token expiration time, enhancing security by limiting token validity.
       }),
       inject: [ConfigService],
     }),
     ConfigModule, // Ensures environment variables are accessible for JWT configuration.
     LoggerModule, // Provides structured logging capabilities for authentication events.
+    TypeOrmModule.forFeature([User]),
   ],
   providers: [AuthService, JwtStrategy], // `AuthService` handles core auth logic; `JwtStrategy` defines JWT validation.
   controllers: [AuthController], // `AuthController` exposes authentication API endpoints.

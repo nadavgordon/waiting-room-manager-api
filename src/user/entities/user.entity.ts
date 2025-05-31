@@ -16,6 +16,14 @@ export class User {
   @Column()
   passwordHash: string; // Stores the securely hashed password.
 
+  @ApiProperty({ description: 'Stores the refresh token hash for the user', example: 'hashed-refresh-token-string' })
+  @Column({ nullable: true })
+  refreshTokenHash: string | null;
+
+  @ApiProperty({ description: 'Timestamp when the refresh token expires', example: '2024-01-01T12:00:00Z' })
+  @Column({ type: 'timestamp', nullable: true })
+  refreshTokenExpiresAt: Date | null;
+
   @ApiProperty({ description: 'Timestamp when the user account was created', example: '2023-01-01T12:00:00Z' })
   @CreateDateColumn()
   createdAt: Date;

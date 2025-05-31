@@ -3,6 +3,14 @@ import { UserService } from '../user/user.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { LoggerService } from '../common/logger/logger.service';
+import { ConfigService } from '@nestjs/config';
+import { User } from '../user/entities/user.entity';
+import { Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
+import { v4 as uuidv4 } from 'uuid';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
+import { Inject } from '@nestjs/common';
 
 @Injectable()
 export class AuthService {
@@ -10,6 +18,10 @@ export class AuthService {
     private userService: UserService,
     private jwtService: JwtService,
     private readonly logger: LoggerService,
+    private configService: ConfigService,
+    @InjectRepository(User)
+    private usersRepository: Repository<User>,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
   /**
@@ -46,13 +58,92 @@ export class AuthService {
    */
   async login(user: any) {
     this.logger.log(`User login initiated for: ${user.username}`, 'AuthService');
-    // The JWT payload contains essential user information (username and ID).
     const payload = { username: user.username, sub: user.id };
     const accessToken = this.jwtService.sign(payload);
+
+    const refreshToken = uuidv4();
+    const refreshTokenHash = await bcrypt.hash(refreshToken, 10);
+    const refreshTokenExpiresAt = new Date();
+    refreshTokenExpiresAt.setDate(refreshTokenExpiresAt.getDate() + 7); // Refresh token valid for 7 days
+
+    await this.usersRepository.update(user.id, {
+      refreshTokenHash,
+      refreshTokenExpiresAt,
+    });
+
     this.logger.log(`User ${user.username} logged in successfully.`, 'AuthService');
     return {
       access_token: accessToken,
+      refresh_token: refreshToken,
+      expires_in: this.configService.get<string>('JWT_ACCESS_TOKEN_EXPIRATION_TIME') || '1h',
     };
+  }
+
+  /**
+   * Refreshes an access token using a valid refresh token.
+   * @param refreshToken The refresh token provided by the client.
+   * @returns An object containing a new `access_token` and `refresh_token`.
+   * @throws UnauthorizedException if the refresh token is invalid or expired.
+   */
+  async refreshTokens(refreshToken: string) {
+    this.logger.log('Attempting to refresh tokens', 'AuthService');
+
+    const users = await this.usersRepository.find();
+    const user = users.find(u => u.refreshTokenHash && bcrypt.compareSync(refreshToken, u.refreshTokenHash));
+
+    if (!user || !user.refreshTokenExpiresAt || user.refreshTokenExpiresAt < new Date()) {
+      this.logger.warn('Invalid or expired refresh token', 'AuthService');
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
+
+    // Invalidate the old refresh token by clearing it from the user entity
+    await this.usersRepository.update(user.id, {
+      refreshTokenHash: null,
+      refreshTokenExpiresAt: null,
+    });
+
+    // Generate new access and refresh tokens
+    const payload = { username: user.username, sub: user.id };
+    const newAccessToken = this.jwtService.sign(payload);
+    const newRefreshToken = uuidv4();
+    const newRefreshTokenHash = await bcrypt.hash(newRefreshToken, 10);
+    const newRefreshTokenExpiresAt = new Date();
+    newRefreshTokenExpiresAt.setDate(newRefreshTokenExpiresAt.getDate() + 7);
+
+    await this.usersRepository.update(user.id, {
+      refreshTokenHash: newRefreshTokenHash,
+      refreshTokenExpiresAt: newRefreshTokenExpiresAt,
+    });
+
+    this.logger.log(`Tokens refreshed successfully for user: ${user.username}`, 'AuthService');
+    return {
+      access_token: newAccessToken,
+      refresh_token: newRefreshToken,
+      expires_in: this.configService.get<string>('JWT_ACCESS_TOKEN_EXPIRATION_TIME') || '1h',
+    };
+  }
+
+  /**
+   * Revokes an access token by adding it to a blacklist.
+   * @param token The JWT access token to revoke.
+   * @returns True if the token was successfully blacklisted.
+   */
+  async revokeToken(token: string): Promise<boolean> {
+    this.logger.log('Attempting to revoke token', 'AuthService');
+    const decodedToken = this.jwtService.decode(token);
+    if (!decodedToken || typeof decodedToken === 'string' || !decodedToken.exp) {
+      this.logger.warn('Invalid token for revocation', 'AuthService');
+      return false;
+    }
+
+    const expiresIn = decodedToken.exp - Math.floor(Date.now() / 1000); // Time until expiration in seconds
+    if (expiresIn > 0) {
+      await this.cacheManager.set(`blacklist:${token}`, 1, expiresIn * 1000); // Store in cache with token's remaining TTL
+      this.logger.log(`Token blacklisted successfully. Expires in ${expiresIn} seconds.`, 'AuthService');
+      return true;
+    }
+    this.logger.warn('Token already expired, no need to blacklist.', 'AuthService');
+    return false;
   }
 
   /**
