@@ -1,5 +1,10 @@
 import { Injectable, LoggerService as NestLoggerService } from '@nestjs/common';
-import { createLogger, format, transports, Logger as WinstonLogger } from 'winston';
+import {
+  createLogger,
+  format,
+  transports,
+  Logger as WinstonLogger,
+} from 'winston';
 
 @Injectable()
 export class LoggerService implements NestLoggerService {
@@ -23,12 +28,18 @@ export class LoggerService implements NestLoggerService {
         format.json(), // Ensures logs are in JSON format for structured logging.
         format((info) => {
           // Mask PII and sanitize messages before logging
-          info.message = this.sanitizeLogMessage(this.maskPII(info.message as string));
+          info.message = this.sanitizeLogMessage(
+            this.maskPII(info.message as string),
+          );
           if (info.context) {
-            info.context = this.sanitizeLogMessage(this.maskPII(info.context as string));
+            info.context = this.sanitizeLogMessage(
+              this.maskPII(info.context as string),
+            );
           }
           if (info.trace) {
-            info.trace = this.sanitizeLogMessage(this.maskPII(info.trace as string));
+            info.trace = this.sanitizeLogMessage(
+              this.maskPII(info.trace as string),
+            );
           }
           return info;
         })(),
@@ -48,9 +59,15 @@ export class LoggerService implements NestLoggerService {
   private maskPII(message: string): string {
     let maskedMessage = message;
     // Mask username
-    maskedMessage = maskedMessage.replace(/(["']?username["']?\s*:\s*["'])([^"']+)(["'])/gi, '$1[MASKED_USERNAME]$3');
+    maskedMessage = maskedMessage.replace(
+      /(["']?username["']?\s*:\s*["'])([^"']+)(["'])/gi,
+      '$1[MASKED_USERNAME]$3',
+    );
     // Mask userId (assuming it's a UUID or similar string)
-    maskedMessage = maskedMessage.replace(/(["']?userId["']?:\s*["'])([a-f0-9-]+)(["'])/gi, '$1[MASKED_USERID]$3');
+    maskedMessage = maskedMessage.replace(
+      /(["']?userId["']?:\s*["'])([a-f0-9-]+)(["'])/gi,
+      '$1[MASKED_USERID]$3',
+    );
     return maskedMessage;
   }
 

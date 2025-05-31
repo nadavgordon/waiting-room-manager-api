@@ -36,12 +36,18 @@ export class AuthService {
     this.logger.log(`Attempting to validate user: ${username}`, 'AuthService');
     const user = await this.userService.findOne(username);
     if (!user) {
-      this.logger.warn(`User not found during validation: ${username}`, 'AuthService');
+      this.logger.warn(
+        `User not found during validation: ${username}`,
+        'AuthService',
+      );
       return null;
     }
     // Securely compare the provided password with the stored hash using bcrypt.
     if (!(await bcrypt.compare(pass, user.passwordHash))) {
-      this.logger.warn(`Invalid credentials for user: ${username}`, 'AuthService');
+      this.logger.warn(
+        `Invalid credentials for user: ${username}`,
+        'AuthService',
+      );
       return null;
     }
     this.logger.log(`User validated successfully: ${username}`, 'AuthService');
@@ -57,11 +63,14 @@ export class AuthService {
    * @returns An object containing the `access_token`.
    */
   async login(user: any) {
-    this.logger.log(`User login initiated for: ${user.username}`, 'AuthService');
+    this.logger.log(
+      `User login initiated for: ${user.username}`,
+      'AuthService',
+    );
     const payload = {
       username: user.username,
       sub: user.id,
-      nonce: Date.now() // Add a timestamp to ensure each token is unique
+      nonce: Date.now(), // Add a timestamp to ensure each token is unique
     };
     const accessToken = this.jwtService.sign(payload);
 
@@ -75,11 +84,16 @@ export class AuthService {
       refreshTokenExpiresAt,
     });
 
-    this.logger.log(`User ${user.username} logged in successfully.`, 'AuthService');
+    this.logger.log(
+      `User ${user.username} logged in successfully.`,
+      'AuthService',
+    );
     return {
       access_token: accessToken,
       refresh_token: refreshToken,
-      expires_in: this.configService.get<string>('JWT_ACCESS_TOKEN_EXPIRATION_TIME') || '1h',
+      expires_in:
+        this.configService.get<string>('JWT_ACCESS_TOKEN_EXPIRATION_TIME') ||
+        '1h',
     };
   }
 
@@ -94,15 +108,21 @@ export class AuthService {
 
     // Find all users with a non-null refreshTokenHash
     const users = await this.usersRepository.find({
-      where: [
-        { refreshTokenHash: Not(IsNull()) }
-      ]
+      where: [{ refreshTokenHash: Not(IsNull()) }],
     });
-    
-    // Find the user with the matching refresh token
-    const user = users.find(u => u.refreshTokenHash && bcrypt.compareSync(refreshToken, u.refreshTokenHash));
 
-    if (!user || !user.refreshTokenExpiresAt || user.refreshTokenExpiresAt < new Date()) {
+    // Find the user with the matching refresh token
+    const user = users.find(
+      (u) =>
+        u.refreshTokenHash &&
+        bcrypt.compareSync(refreshToken, u.refreshTokenHash),
+    );
+
+    if (
+      !user ||
+      !user.refreshTokenExpiresAt ||
+      user.refreshTokenExpiresAt < new Date()
+    ) {
       this.logger.warn('Invalid or expired refresh token', 'AuthService');
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
@@ -117,7 +137,7 @@ export class AuthService {
     const payload = {
       username: user.username,
       sub: user.id,
-      nonce: Date.now() // Add a timestamp to ensure each token is unique
+      nonce: Date.now(), // Add a timestamp to ensure each token is unique
     };
     const newAccessToken = this.jwtService.sign(payload);
     const newRefreshToken = uuidv4();
@@ -130,11 +150,16 @@ export class AuthService {
       refreshTokenExpiresAt: newRefreshTokenExpiresAt,
     });
 
-    this.logger.log(`Tokens refreshed successfully for user: ${user.username}`, 'AuthService');
+    this.logger.log(
+      `Tokens refreshed successfully for user: ${user.username}`,
+      'AuthService',
+    );
     return {
       access_token: newAccessToken,
       refresh_token: newRefreshToken,
-      expires_in: this.configService.get<string>('JWT_ACCESS_TOKEN_EXPIRATION_TIME') || '1h',
+      expires_in:
+        this.configService.get<string>('JWT_ACCESS_TOKEN_EXPIRATION_TIME') ||
+        '1h',
     };
   }
 
@@ -146,7 +171,11 @@ export class AuthService {
   async revokeToken(token: string): Promise<boolean> {
     this.logger.log('Attempting to revoke token', 'AuthService');
     const decodedToken = this.jwtService.decode(token);
-    if (!decodedToken || typeof decodedToken === 'string' || !decodedToken.exp) {
+    if (
+      !decodedToken ||
+      typeof decodedToken === 'string' ||
+      !decodedToken.exp
+    ) {
       this.logger.warn('Invalid token for revocation', 'AuthService');
       return false;
     }
@@ -154,10 +183,16 @@ export class AuthService {
     const expiresIn = decodedToken.exp - Math.floor(Date.now() / 1000); // Time until expiration in seconds
     if (expiresIn > 0) {
       await this.cacheManager.set(`blacklist:${token}`, 1, expiresIn * 1000); // Store in cache with token's remaining TTL
-      this.logger.log(`Token blacklisted successfully. Expires in ${expiresIn} seconds.`, 'AuthService');
+      this.logger.log(
+        `Token blacklisted successfully. Expires in ${expiresIn} seconds.`,
+        'AuthService',
+      );
       return true;
     }
-    this.logger.warn('Token already expired, no need to blacklist.', 'AuthService');
+    this.logger.warn(
+      'Token already expired, no need to blacklist.',
+      'AuthService',
+    );
     return false;
   }
 
@@ -173,7 +208,10 @@ export class AuthService {
     this.logger.log(`Attempting to register user: ${username}`, 'AuthService');
     const existingUser = await this.userService.findOne(username);
     if (existingUser) {
-      this.logger.warn(`Registration failed: Username already exists: ${username}`, 'AuthService');
+      this.logger.warn(
+        `Registration failed: Username already exists: ${username}`,
+        'AuthService',
+      );
       throw new UnauthorizedException('Username already exists');
     }
     // Hash the password using bcrypt with 10 salt rounds for strong security.

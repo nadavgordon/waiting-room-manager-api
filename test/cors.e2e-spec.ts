@@ -51,7 +51,8 @@ describe('CORS (e2e)', () => {
     // Mock environment variables required for the application to run, especially JWT_SECRET and DB settings.
     process.env = {
       ...originalEnv, // Preserve other environment variables
-      JWT_SECRET: 'a_very_long_and_secure_jwt_secret_for_testing_purposes_at_least_32_chars', // Mock JWT_SECRET for tests
+      JWT_SECRET:
+        'a_very_long_and_secure_jwt_secret_for_testing_purposes_at_least_32_chars', // Mock JWT_SECRET for tests
       DB_TYPE: 'postgres', // Ensure tests use postgres
       DB_HOST: 'localhost',
       DB_PORT: '5432',
@@ -80,7 +81,10 @@ describe('CORS (e2e)', () => {
 
     // Configure CORS based on the `corsOrigins` parameter.
     app.enableCors({
-      origin: (origin: string, callback: (err: Error | null, allow?: boolean) => void) => {
+      origin: (
+        origin: string,
+        callback: (err: Error | null, allow?: boolean) => void,
+      ) => {
         const allowedOrigins = corsOrigins ? corsOrigins.split(',') : [];
         if (allowedOrigins.length === 0) {
           // If no origins are specified, disallow all cross-origin requests.
@@ -110,7 +114,9 @@ describe('CORS (e2e)', () => {
     const response = await request(app.getHttpServer())
       .get('/')
       .set('Origin', 'http://localhost:3001'); // Send request from the whitelisted origin
-    expect(response.headers['access-control-allow-origin']).toBe('http://localhost:3001');
+    expect(response.headers['access-control-allow-origin']).toBe(
+      'http://localhost:3001',
+    );
     expect(response.headers['access-control-allow-credentials']).toBe('true');
   });
 
@@ -159,15 +165,21 @@ describe('CORS (e2e)', () => {
    * allowing requests from each of them.
    */
   it('should allow multiple whitelisted origins', async () => {
-    app = await setupAppWithCors('http://localhost:3001,https://another-frontend.com'); // Set up app with multiple whitelisted origins
+    app = await setupAppWithCors(
+      'http://localhost:3001,https://another-frontend.com',
+    ); // Set up app with multiple whitelisted origins
     let response = await request(app.getHttpServer())
       .get('/')
       .set('Origin', 'http://localhost:3001'); // Test first whitelisted origin
-    expect(response.headers['access-control-allow-origin']).toBe('http://localhost:3001');
+    expect(response.headers['access-control-allow-origin']).toBe(
+      'http://localhost:3001',
+    );
 
     response = await request(app.getHttpServer())
       .get('/')
       .set('Origin', 'https://another-frontend.com'); // Test second whitelisted origin
-    expect(response.headers['access-control-allow-origin']).toBe('https://another-frontend.com');
+    expect(response.headers['access-control-allow-origin']).toBe(
+      'https://another-frontend.com',
+    );
   });
 });

@@ -16,19 +16,23 @@ describe('Auth Rate Limiting (e2e)', () => {
       imports: [
         AppModule,
         // Configure ThrottlerModule with a low limit specifically for testing rate limiting
-        ThrottlerModule.forRoot([{
-          ttl: 60000, // 1 minute
-          limit: 5, // 5 requests per minute for testing rate limiting
-        }]),
+        ThrottlerModule.forRoot([
+          {
+            ttl: 60000, // 1 minute
+            limit: 5, // 5 requests per minute for testing rate limiting
+          },
+        ]),
       ],
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(new (require('@nestjs/common').ValidationPipe)({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    }));
+    app.useGlobalPipes(
+      new (require('@nestjs/common').ValidationPipe)({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+      }),
+    );
     await app.init();
   });
 

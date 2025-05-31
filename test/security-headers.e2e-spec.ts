@@ -21,26 +21,30 @@ describe('HTTP Security Headers (e2e)', () => {
     app = moduleFixture.createNestApplication();
     // Apply Helmet middleware as it's done in main.ts
     app.use(helmet());
-    app.use(helmet.contentSecurityPolicy({
-      directives: {
-        defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        imgSrc: ["'self'", 'data:'],
-        fontSrc: ["'self'"],
-        connectSrc: ["'self'", 'https://ka-f.fontawesome.com'],
-        objectSrc: ["'none'"],
-        mediaSrc: ["'self'"],
-        frameSrc: ["'none'"],
-      },
-    }));
+    app.use(
+      helmet.contentSecurityPolicy({
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          imgSrc: ["'self'", 'data:'],
+          fontSrc: ["'self'"],
+          connectSrc: ["'self'", 'https://ka-f.fontawesome.com'],
+          objectSrc: ["'none'"],
+          mediaSrc: ["'self'"],
+          frameSrc: ["'none'"],
+        },
+      }),
+    );
     app.use(helmet.noSniff());
     app.use(helmet.frameguard({ action: 'deny' }));
-    app.use(helmet.hsts({
-      maxAge: 31536000,
-      includeSubDomains: true,
-      preload: true,
-    }));
+    app.use(
+      helmet.hsts({
+        maxAge: 31536000,
+        includeSubDomains: true,
+        preload: true,
+      }),
+    );
     await app.init();
   });
 
@@ -55,15 +59,33 @@ describe('HTTP Security Headers (e2e)', () => {
       .get('/')
       .expect((res) => {
         expect(res.headers['content-security-policy']).toBeDefined();
-        expect(res.headers['content-security-policy']).toContain("default-src 'self'");
-        expect(res.headers['content-security-policy']).toContain("script-src 'self' 'unsafe-inline' 'unsafe-eval'");
-        expect(res.headers['content-security-policy']).toContain("style-src 'self' 'unsafe-inline'");
-        expect(res.headers['content-security-policy']).toContain("img-src 'self' data:");
-        expect(res.headers['content-security-policy']).toContain("font-src 'self'");
-        expect(res.headers['content-security-policy']).toContain("connect-src 'self' https://ka-f.fontawesome.com");
-        expect(res.headers['content-security-policy']).toContain("object-src 'none'");
-        expect(res.headers['content-security-policy']).toContain("media-src 'self'");
-        expect(res.headers['content-security-policy']).toContain("frame-src 'none'");
+        expect(res.headers['content-security-policy']).toContain(
+          "default-src 'self'",
+        );
+        expect(res.headers['content-security-policy']).toContain(
+          "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+        );
+        expect(res.headers['content-security-policy']).toContain(
+          "style-src 'self' 'unsafe-inline'",
+        );
+        expect(res.headers['content-security-policy']).toContain(
+          "img-src 'self' data:",
+        );
+        expect(res.headers['content-security-policy']).toContain(
+          "font-src 'self'",
+        );
+        expect(res.headers['content-security-policy']).toContain(
+          "connect-src 'self' https://ka-f.fontawesome.com",
+        );
+        expect(res.headers['content-security-policy']).toContain(
+          "object-src 'none'",
+        );
+        expect(res.headers['content-security-policy']).toContain(
+          "media-src 'self'",
+        );
+        expect(res.headers['content-security-policy']).toContain(
+          "frame-src 'none'",
+        );
       });
   });
 
@@ -88,8 +110,12 @@ describe('HTTP Security Headers (e2e)', () => {
       .get('/')
       .expect((res) => {
         expect(res.headers['strict-transport-security']).toBeDefined();
-        expect(res.headers['strict-transport-security']).toContain('max-age=31536000');
-        expect(res.headers['strict-transport-security']).toContain('includeSubDomains');
+        expect(res.headers['strict-transport-security']).toContain(
+          'max-age=31536000',
+        );
+        expect(res.headers['strict-transport-security']).toContain(
+          'includeSubDomains',
+        );
         expect(res.headers['strict-transport-security']).toContain('preload');
       });
   });

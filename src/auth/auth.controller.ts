@@ -1,8 +1,23 @@
-import { Controller, Post, Body, UseGuards, Request, HttpCode, HttpStatus, UnauthorizedException, Get } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  Request,
+  HttpCode,
+  HttpStatus,
+  UnauthorizedException,
+  Get,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from '../user/dto/create-user.dto';
 import { LoginUserDto } from '../user/dto/login-user.dto';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { JwtBlacklistGuard } from './jwt-blacklist.guard';
 import { ThrottlerBehindProxyGuard } from '../common/guards/throttler-behind-proxy.guard';
@@ -31,10 +46,14 @@ export class AuthController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Bad Request. Invalid input data, username already exists, or password policy violation.',
+    description:
+      'Bad Request. Invalid input data, username already exists, or password policy violation.',
   })
   async register(@Body() createUserDto: CreateUserDto) {
-    return this.authService.register(createUserDto.username, createUserDto.password);
+    return this.authService.register(
+      createUserDto.username,
+      createUserDto.password,
+    );
   }
 
   /**
@@ -50,11 +69,19 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     description: 'User successfully logged in and JWT token issued.',
-    schema: { example: { access_token: 'eyJ...', refresh_token: 'uuid-string' } },
+    schema: {
+      example: { access_token: 'eyJ...', refresh_token: 'uuid-string' },
+    },
   })
-  @ApiResponse({ status: 401, description: 'Unauthorized. Invalid username or password.' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized. Invalid username or password.',
+  })
   async login(@Body() loginUserDto: LoginUserDto, @Request() req: any) {
-    const user = await this.authService.validateUser(loginUserDto.username, loginUserDto.password);
+    const user = await this.authService.validateUser(
+      loginUserDto.username,
+      loginUserDto.password,
+    );
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -74,9 +101,14 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     description: 'Tokens successfully refreshed.',
-    schema: { example: { access_token: 'eyJ...', refresh_token: 'uuid-string' } },
+    schema: {
+      example: { access_token: 'eyJ...', refresh_token: 'uuid-string' },
+    },
   })
-  @ApiResponse({ status: 401, description: 'Unauthorized. Invalid or expired refresh token.' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized. Invalid or expired refresh token.',
+  })
   async refresh(@Body() refreshTokenDto: RefreshTokenDto) {
     return this.authService.refreshTokens(refreshTokenDto.refreshToken);
   }
@@ -92,7 +124,10 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Logout user and revoke JWT access token' })
   @ApiResponse({ status: 200, description: 'Token successfully revoked.' })
-  @ApiResponse({ status: 401, description: 'Unauthorized. Invalid or missing access token.' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized. Invalid or missing access token.',
+  })
   async logout(@Request() req: any) {
     const token = req.headers.authorization.split(' ')[1]; // Extract token from Bearer header
     await this.authService.revokeToken(token);

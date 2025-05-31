@@ -22,7 +22,11 @@ import { User } from '../user/entities/user.entity';
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET'), // JWT secret from environment variables for security.
-        signOptions: { expiresIn: configService.get<string>('JWT_ACCESS_TOKEN_EXPIRATION_TIME') || '1h' }, // Token expiration time, enhancing security by limiting token validity.
+        signOptions: {
+          expiresIn:
+            configService.get<string>('JWT_ACCESS_TOKEN_EXPIRATION_TIME') ||
+            '1h',
+        }, // Token expiration time, enhancing security by limiting token validity.
       }),
       inject: [ConfigService],
     }),
@@ -34,7 +38,7 @@ import { User } from '../user/entities/user.entity';
     AuthService,
     JwtStrategy,
     JwtBlacklistStrategy,
-    JwtBlacklistGuard
+    JwtBlacklistGuard,
   ], // Core auth providers including strategies and guards
   controllers: [AuthController], // `AuthController` exposes authentication API endpoints.
   exports: [AuthService, JwtBlacklistGuard], // Export services and guards for use in other modules

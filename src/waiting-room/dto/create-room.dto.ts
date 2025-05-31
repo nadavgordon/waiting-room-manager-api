@@ -1,8 +1,20 @@
-import { IsString, IsNotEmpty, IsInt, Min, Max, IsOptional, IsUUID, IsBoolean } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsInt,
+  Min,
+  Max,
+  IsOptional,
+  IsUUID,
+  IsBoolean,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateRoomDto {
-  @ApiProperty({ example: 'My Awesome Room', description: 'The name of the waiting room' })
+  @ApiProperty({
+    example: 'My Awesome Room',
+    description: 'The name of the waiting room',
+  })
   @IsString()
   @IsNotEmpty()
   name: string;
@@ -31,7 +43,8 @@ export class CreateRoomDto {
   isPublic?: boolean;
 
   @ApiProperty({
-    description: 'Whether join requests require host approval (applies to private rooms)',
+    description:
+      'Whether join requests require host approval (applies to private rooms)',
     example: false,
     required: false,
     default: false,
@@ -39,5 +52,4 @@ export class CreateRoomDto {
   @IsOptional()
   @IsBoolean()
   approvalRequired?: boolean;
-
 }

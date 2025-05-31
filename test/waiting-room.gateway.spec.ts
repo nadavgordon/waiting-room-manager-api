@@ -160,7 +160,9 @@ describe('WaitingRoomGateway', () => {
       expect(jwtService.verify).toHaveBeenCalledWith(mockToken);
       expect(userService.findOne).toHaveBeenCalledWith(mockUser.id);
       expect(client.data.user).toEqual(mockUser);
-      expect(loggerSpy).toHaveBeenCalledWith(`Client connected: ${client.id} (User: ${mockUser.username})`);
+      expect(loggerSpy).toHaveBeenCalledWith(
+        `Client connected: ${client.id} (User: ${mockUser.username})`,
+      );
       expect(client.disconnect).not.toHaveBeenCalled();
     });
 
@@ -176,7 +178,9 @@ describe('WaitingRoomGateway', () => {
 
       await gateway.handleConnection(client);
 
-      expect(loggerSpy).toHaveBeenCalledWith(`Client connection failed: ${client.id} - No authorization token provided.`);
+      expect(loggerSpy).toHaveBeenCalledWith(
+        `Client connection failed: ${client.id} - No authorization token provided.`,
+      );
       expect(client.disconnect).toHaveBeenCalledWith(true);
     });
 
@@ -199,7 +203,9 @@ describe('WaitingRoomGateway', () => {
       await gateway.handleConnection(client);
 
       expect(jwtService.verify).toHaveBeenCalledWith(mockToken);
-      expect(loggerSpy).toHaveBeenCalledWith(`Client connection failed: ${client.id} - Invalid token`);
+      expect(loggerSpy).toHaveBeenCalledWith(
+        `Client connection failed: ${client.id} - Invalid token`,
+      );
       expect(client.disconnect).toHaveBeenCalledWith(true);
     });
 
@@ -223,7 +229,9 @@ describe('WaitingRoomGateway', () => {
 
       expect(jwtService.verify).toHaveBeenCalledWith(mockToken);
       expect(userService.findOne).toHaveBeenCalledWith(mockPayload.sub);
-      expect(loggerSpy).toHaveBeenCalledWith(`Client connection failed: ${client.id} - User not found.`);
+      expect(loggerSpy).toHaveBeenCalledWith(
+        `Client connection failed: ${client.id} - User not found.`,
+      );
       expect(client.disconnect).toHaveBeenCalledWith(true);
     });
   });
@@ -238,7 +246,9 @@ describe('WaitingRoomGateway', () => {
     it('should log client disconnection', async () => {
       const loggerSpy = jest.spyOn(gateway['logger'], 'log'); // Spy on logger.log
       await gateway.handleDisconnect(mockSocketClient as any); // Simulate a client disconnection
-      expect(loggerSpy).toHaveBeenCalledWith(`Client disconnected: ${mockSocketClient.id}`);
+      expect(loggerSpy).toHaveBeenCalledWith(
+        `Client disconnected: ${mockSocketClient.id}`,
+      );
     });
   });
 
@@ -294,7 +304,10 @@ describe('WaitingRoomGateway', () => {
       const players = [{ userId: 'player1', status: RoomPlayerStatus.ACTIVE }]; // Mock player data
       gateway.emitRoomPlayersUpdate(roomId, players); // Call the method to be tested
       expect(mockIoServer.to).toHaveBeenCalledWith(roomId); // Verify `to` method was called with the room ID
-      expect(mockIoServer.to(roomId).emit).toHaveBeenCalledWith('roomPlayersUpdated', { roomId, players }); // Verify the event was emitted to the specific room
+      expect(mockIoServer.to(roomId).emit).toHaveBeenCalledWith(
+        'roomPlayersUpdated',
+        { roomId, players },
+      ); // Verify the event was emitted to the specific room
     });
   });
 
@@ -337,7 +350,9 @@ describe('WaitingRoomGateway', () => {
       const loggerSpy = jest.spyOn(gateway['logger'], 'log'); // Spy on logger.log
       await gateway.handleJoinRoomUpdates(joinRoomDto, mockSocketClient as any); // Simulate a join room update message
       expect(mockSocketClient.join).toHaveBeenCalledWith(joinRoomDto.roomId); // Verify client joined the room
-      expect(loggerSpy).toHaveBeenCalledWith(`Client ${mockSocketClient.id} (User: ${mockSocketClient.data.user.username}) joined room updates for room: ${joinRoomDto.roomId}`);
+      expect(loggerSpy).toHaveBeenCalledWith(
+        `Client ${mockSocketClient.id} (User: ${mockSocketClient.data.user.username}) joined room updates for room: ${joinRoomDto.roomId}`,
+      );
     });
   });
 
@@ -378,9 +393,14 @@ describe('WaitingRoomGateway', () => {
 
       const leaveRoomDto: LeaveRoomDto = { roomId: 'room1' };
       const loggerSpy = jest.spyOn(gateway['logger'], 'log'); // Spy on logger.log
-      await gateway.handleLeaveRoomUpdates(leaveRoomDto, mockSocketClient as any); // Simulate a leave room update message
+      await gateway.handleLeaveRoomUpdates(
+        leaveRoomDto,
+        mockSocketClient as any,
+      ); // Simulate a leave room update message
       expect(mockSocketClient.leave).toHaveBeenCalledWith(leaveRoomDto.roomId); // Verify client left the room
-      expect(loggerSpy).toHaveBeenCalledWith(`Client ${mockSocketClient.id} (User: ${mockSocketClient.data.user.username}) left room updates for room: ${leaveRoomDto.roomId}`);
+      expect(loggerSpy).toHaveBeenCalledWith(
+        `Client ${mockSocketClient.id} (User: ${mockSocketClient.data.user.username}) left room updates for room: ${leaveRoomDto.roomId}`,
+      );
     });
   });
 });

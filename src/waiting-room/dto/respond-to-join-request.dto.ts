@@ -15,5 +15,4 @@ export class RespondToJoinRequestDto {
   @IsNotEmpty()
   @IsEnum(JoinRequestDecision)
   decision: JoinRequestDecision;
-
 }

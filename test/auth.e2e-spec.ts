@@ -23,20 +23,24 @@ describe('Auth (e2e)', () => {
       imports: [
         AppModule, // Import the main application module
         // Configure ThrottlerModule for testing purposes, overriding default limits if necessary
-        ThrottlerModule.forRoot([{
-          ttl: 60000, // 1 minute
-          limit: 50, // Increased limit for testing purposes
-        }]),
+        ThrottlerModule.forRoot([
+          {
+            ttl: 60000, // 1 minute
+            limit: 50, // Increased limit for testing purposes
+          },
+        ]),
       ],
     }).compile();
 
     app = moduleFixture.createNestApplication();
     // Apply global validation pipes to ensure DTO validation rules are enforced during E2E tests.
-    app.useGlobalPipes(new (require('@nestjs/common').ValidationPipe)({
-      whitelist: true, // Remove properties that are not defined in the DTO
-      forbidNonWhitelisted: true, // Throw an error if non-whitelisted properties are present
-      transform: true, // Automatically transform incoming payload to DTO instances
-    }));
+    app.useGlobalPipes(
+      new (require('@nestjs/common').ValidationPipe)({
+        whitelist: true, // Remove properties that are not defined in the DTO
+        forbidNonWhitelisted: true, // Throw an error if non-whitelisted properties are present
+        transform: true, // Automatically transform incoming payload to DTO instances
+      }),
+    );
     await app.init(); // Initialize the NestJS application
   });
 
@@ -72,7 +76,9 @@ describe('Auth (e2e)', () => {
       .send({ username: 'testuser2', password: 'Pass1!' }) // Password is too short
       .expect(400) // Expect HTTP status 400 (Bad Request)
       .expect((res) => {
-        expect(res.body.message).toContain('Password must be at least 8 characters long');
+        expect(res.body.message).toContain(
+          'Password must be at least 8 characters long',
+        );
       });
   });
 
@@ -87,7 +93,9 @@ describe('Auth (e2e)', () => {
       .send({ username: 'testuser3', password: 'password123!' }) // Missing uppercase
       .expect(400)
       .expect((res) => {
-        expect(res.body.message).toContain('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character, and be between 8 and 12 characters long');
+        expect(res.body.message).toContain(
+          'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character, and be between 8 and 12 characters long',
+        );
       });
   });
 
@@ -102,7 +110,9 @@ describe('Auth (e2e)', () => {
       .send({ username: 'testuser4', password: 'PASSWORD123!' }) // Missing lowercase
       .expect(400)
       .expect((res) => {
-        expect(res.body.message).toContain('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character, and be between 8 and 12 characters long');
+        expect(res.body.message).toContain(
+          'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character, and be between 8 and 12 characters long',
+        );
       });
   });
 
@@ -117,7 +127,9 @@ describe('Auth (e2e)', () => {
       .send({ username: 'testuser5', password: 'Password!!' }) // Missing number
       .expect(400)
       .expect((res) => {
-        expect(res.body.message).toContain('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character, and be between 8 and 12 characters long');
+        expect(res.body.message).toContain(
+          'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character, and be between 8 and 12 characters long',
+        );
       });
   });
 
@@ -132,7 +144,9 @@ describe('Auth (e2e)', () => {
       .send({ username: 'testuser6', password: 'Password123' }) // Missing special character
       .expect(400)
       .expect((res) => {
-        expect(res.body.message).toContain('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character, and be between 8 and 12 characters long');
+        expect(res.body.message).toContain(
+          'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character, and be between 8 and 12 characters long',
+        );
       });
   });
 
@@ -147,10 +161,11 @@ describe('Auth (e2e)', () => {
       .send({ username: 'testuser7', password: 'Password12345!' }) // Password is too long
       .expect(400)
       .expect((res) => {
-        expect(res.body.message).toContain('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character, and be between 8 and 12 characters long');
+        expect(res.body.message).toContain(
+          'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character, and be between 8 and 12 characters long',
+        );
       });
   });
-
 
   /**
    * Test suite for JWT refresh token mechanism.
@@ -198,7 +213,9 @@ describe('Auth (e2e)', () => {
         .send({ refreshToken: 'invalid-refresh-token' })
         .expect(401)
         .expect((res) => {
-          expect(res.body.message).toContain('Invalid or expired refresh token');
+          expect(res.body.message).toContain(
+            'Invalid or expired refresh token',
+          );
         });
     });
 
@@ -222,7 +239,9 @@ describe('Auth (e2e)', () => {
         .send({ refreshToken: initialRefreshToken })
         .expect(401)
         .expect((res) => {
-          expect(res.body.message).toContain('Invalid or expired refresh token');
+          expect(res.body.message).toContain(
+            'Invalid or expired refresh token',
+          );
         });
     });
   });
@@ -271,9 +290,7 @@ describe('Auth (e2e)', () => {
     });
 
     it('should return 401 Unauthorized if no token is provided for logout', () => {
-      return request(app.getHttpServer())
-        .post('/auth/logout')
-        .expect(401);
+      return request(app.getHttpServer()).post('/auth/logout').expect(401);
     });
 
     it('should return 401 Unauthorized if an invalid token is provided for logout', () => {

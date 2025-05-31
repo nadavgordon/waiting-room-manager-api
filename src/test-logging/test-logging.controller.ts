@@ -22,7 +22,10 @@ export class TestLoggingController {
    */
   @Get('log-pii')
   logPii(@Query('username') username: string, @Query('userId') userId: string) {
-    this.logger.log(`User logged in: {"username":"${username}", "userId":"${userId}"}`, 'TestLoggingController');
+    this.logger.log(
+      `User logged in: {"username":"${username}", "userId":"${userId}"}`,
+      'TestLoggingController',
+    );
     return { success: true };
   }
 

@@ -33,7 +33,8 @@ describe('Redis Security (e2e)', () => {
     } else {
       delete process.env.REDIS_PASSWORD;
     }
-    if (originalRedisHost !== undefined) { // Restore original REDIS_HOST
+    if (originalRedisHost !== undefined) {
+      // Restore original REDIS_HOST
       process.env.REDIS_HOST = originalRedisHost;
     } else {
       delete process.env.REDIS_HOST;

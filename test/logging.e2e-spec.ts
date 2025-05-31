@@ -1,5 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, LoggerService as NestLoggerService } from '@nestjs/common';
+import {
+  INestApplication,
+  LoggerService as NestLoggerService,
+} from '@nestjs/common';
 import { AppModule } from '../src/app.module';
 import * as request from 'supertest';
 import { LoggerService } from '../src/common/logger/logger.service'; // Import the actual LoggerService class
@@ -11,8 +14,14 @@ class MockLoggerService implements NestLoggerService {
   // Simplified PII masking logic for the mock
   private maskPII(message: string): string {
     let maskedMessage = message;
-    maskedMessage = maskedMessage.replace(/(["']?username["']?\s*:\s*["'])([^"']+)(["'])/gi, '$1[MASKED_USERNAME]$3');
-    maskedMessage = maskedMessage.replace(/(["']?userId["']?:\s*["'])([a-f0-9-]+)(["'])/gi, '$1[MASKED_USERID]$3');
+    maskedMessage = maskedMessage.replace(
+      /(["']?username["']?\s*:\s*["'])([^"']+)(["'])/gi,
+      '$1[MASKED_USERNAME]$3',
+    );
+    maskedMessage = maskedMessage.replace(
+      /(["']?userId["']?:\s*["'])([a-f0-9-]+)(["'])/gi,
+      '$1[MASKED_USERID]$3',
+    );
     return maskedMessage;
   }
 
@@ -26,7 +35,12 @@ class MockLoggerService implements NestLoggerService {
     return sanitizedMessage;
   }
 
-  private formatAndCapture(level: string, message: string, context?: string, trace?: string) {
+  private formatAndCapture(
+    level: string,
+    message: string,
+    context?: string,
+    trace?: string,
+  ) {
     const formattedInfo: any = {
       level,
       message: this.sanitizeLogMessage(this.maskPII(message)),
@@ -95,7 +109,9 @@ describe('Logging Security (e2e)', () => {
 
     // Spy on process.stdout.write to ensure no unexpected console output from other parts
     // and to confirm that our mock is the only one writing logs.
-    consoleSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    consoleSpy = jest
+      .spyOn(process.stdout, 'write')
+      .mockImplementation(() => true);
 
     await app.init();
   });
@@ -129,7 +145,9 @@ describe('Logging Security (e2e)', () => {
     expect(logEntry.message).not.toContain(userId);
     expect(logEntry.message).toContain('[MASKED_USERNAME]');
     expect(logEntry.message).toContain('[MASKED_USERID]');
-    expect(logEntry.message).toMatch(/User logged in: {"username":"\[MASKED_USERNAME]", "userId":"\[MASKED_USERID]"}/);
+    expect(logEntry.message).toMatch(
+      /User logged in: {"username":"\[MASKED_USERNAME]", "userId":"\[MASKED_USERID]"}/,
+    );
   });
 
   /**
@@ -139,7 +157,9 @@ describe('Logging Security (e2e)', () => {
     const maliciousInput = 'Hello\nWorld!\r\nAnother line.\0';
 
     await request(app.getHttpServer())
-      .get(`/test-logging/log-malicious?input=${encodeURIComponent(maliciousInput)}`)
+      .get(
+        `/test-logging/log-malicious?input=${encodeURIComponent(maliciousInput)}`,
+      )
       .expect(200);
 
     const capturedLogs = mockLoggerService.getCapturedLogs();
@@ -151,18 +171,24 @@ describe('Logging Security (e2e)', () => {
     expect(logEntry.message).not.toContain('\0');
     expect(logEntry.message).toContain('\\n');
     expect(logEntry.message).toContain('\\0');
-    expect(logEntry.message).toBe('User input: Hello\\nWorld!\\nAnother line.\\0');
+    expect(logEntry.message).toBe(
+      'User input: Hello\\nWorld!\\nAnother line.\\0',
+    );
   });
 
   /**
    * @description Tests that PII masking and sanitization are applied to the context field when logging an error.
    */
   it('should mask PII and sanitize context field when logging an error', async () => {
-    const originalContext = 'AuthService - User: {"username":"admin", "userId":"abc-123"}\nError\0';
-    const expectedContext = 'AuthService - User: {"username":"[MASKED_USERNAME]", "userId":"[MASKED_USERID]"}\\nError\\0';
+    const originalContext =
+      'AuthService - User: {"username":"admin", "userId":"abc-123"}\nError\0';
+    const expectedContext =
+      'AuthService - User: {"username":"[MASKED_USERNAME]", "userId":"[MASKED_USERID]"}\\nError\\0';
 
     await request(app.getHttpServer())
-      .get(`/test-logging/log-error-with-pii-and-malicious?context=${encodeURIComponent(originalContext)}&trace=stack%20trace`)
+      .get(
+        `/test-logging/log-error-with-pii-and-malicious?context=${encodeURIComponent(originalContext)}&trace=stack%20trace`,
+      )
       .expect(200);
 
     const capturedLogs = mockLoggerService.getCapturedLogs();
@@ -176,11 +202,15 @@ describe('Logging Security (e2e)', () => {
    * @description Tests that PII masking and sanitization are applied to the trace field when logging an error.
    */
   it('should mask PII and sanitize trace field when logging an error', async () => {
-    const originalTrace = 'Error at {"username":"root"} in file.ts\nStack line 2\0';
-    const expectedTrace = 'Error at {"username":"[MASKED_USERNAME]"} in file.ts\\nStack line 2\\0';
+    const originalTrace =
+      'Error at {"username":"root"} in file.ts\nStack line 2\0';
+    const expectedTrace =
+      'Error at {"username":"[MASKED_USERNAME]"} in file.ts\\nStack line 2\\0';
 
     await request(app.getHttpServer())
-      .get(`/test-logging/log-error-with-pii-and-malicious?context=SomeContext&trace=${encodeURIComponent(originalTrace)}`)
+      .get(
+        `/test-logging/log-error-with-pii-and-malicious?context=SomeContext&trace=${encodeURIComponent(originalTrace)}`,
+      )
       .expect(200);
 
     const capturedLogs = mockLoggerService.getCapturedLogs();

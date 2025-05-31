@@ -1,5 +1,16 @@
-import { Controller, Get, UseGuards, HttpStatus, HttpCode } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  UseGuards,
+  HttpStatus,
+  HttpCode,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { GetUser } from '../auth/get-user.decorator';
 import { User } from './entities/user.entity';
@@ -29,7 +40,10 @@ export class UserController {
       },
     },
   })
-  @ApiResponse({ status: 401, description: 'Unauthorized. Invalid or missing JWT token.' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized. Invalid or missing JWT token.',
+  })
   async getProfile(@GetUser() user: User): Promise<User> {
     // The `user` object is populated by `JwtAuthGuard` and `@GetUser` decorator
     // from the validated JWT payload. No further database lookup is needed here.

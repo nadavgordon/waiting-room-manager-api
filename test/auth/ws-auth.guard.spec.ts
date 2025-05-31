@@ -39,15 +39,19 @@ describe('WsAuthGuard', () => {
       } as ExecutionContext;
 
       // Mock the super.canActivate method to return true, simulating successful JWT validation
-      jest.spyOn(guard, 'canActivate').mockImplementation((context: ExecutionContext) => {
-        const client: Socket = context.switchToWs().getClient();
-        client.handshake.headers.authorization = `Bearer ${mockToken}`; // Ensure token is set for super.canActivate
-        return true; // Simulate successful validation by AuthGuard('jwt')
-      });
+      jest
+        .spyOn(guard, 'canActivate')
+        .mockImplementation((context: ExecutionContext) => {
+          const client: Socket = context.switchToWs().getClient();
+          client.handshake.headers.authorization = `Bearer ${mockToken}`; // Ensure token is set for super.canActivate
+          return true; // Simulate successful validation by AuthGuard('jwt')
+        });
 
       const result = await guard.canActivate(mockExecutionContext);
       expect(result).toBe(true);
-      expect(mockClient.handshake.headers.authorization).toBe(`Bearer ${mockToken}`);
+      expect(mockClient.handshake.headers.authorization).toBe(
+        `Bearer ${mockToken}`,
+      );
     });
 
     it('should throw UnauthorizedException if no authorization token is provided', async () => {
@@ -63,8 +67,12 @@ describe('WsAuthGuard', () => {
         }),
       } as ExecutionContext;
 
-      await expect(() => guard.canActivate(mockExecutionContext)).toThrow(UnauthorizedException);
-      await expect(() => guard.canActivate(mockExecutionContext)).toThrow('No authorization token provided.');
+      await expect(() => guard.canActivate(mockExecutionContext)).toThrow(
+        UnauthorizedException,
+      );
+      await expect(() => guard.canActivate(mockExecutionContext)).toThrow(
+        'No authorization token provided.',
+      );
     });
 
     it('should throw UnauthorizedException if JWT is invalid', async () => {
@@ -84,14 +92,20 @@ describe('WsAuthGuard', () => {
       } as ExecutionContext;
 
       // Mock the super.canActivate method to throw UnauthorizedException
-      jest.spyOn(guard, 'canActivate').mockImplementation((context: ExecutionContext) => {
-        const client: Socket = context.switchToWs().getClient();
-        client.handshake.headers.authorization = `Bearer ${mockToken}`;
-        throw new UnauthorizedException('Invalid token'); // Simulate failed validation by AuthGuard('jwt')
-      });
+      jest
+        .spyOn(guard, 'canActivate')
+        .mockImplementation((context: ExecutionContext) => {
+          const client: Socket = context.switchToWs().getClient();
+          client.handshake.headers.authorization = `Bearer ${mockToken}`;
+          throw new UnauthorizedException('Invalid token'); // Simulate failed validation by AuthGuard('jwt')
+        });
 
-      await expect(() => guard.canActivate(mockExecutionContext)).toThrow(UnauthorizedException);
-      await expect(() => guard.canActivate(mockExecutionContext)).toThrow('Invalid token');
+      await expect(() => guard.canActivate(mockExecutionContext)).toThrow(
+        UnauthorizedException,
+      );
+      await expect(() => guard.canActivate(mockExecutionContext)).toThrow(
+        'Invalid token',
+      );
     });
   });
 
@@ -104,11 +118,15 @@ describe('WsAuthGuard', () => {
 
     it('should throw error if error is provided', () => {
       const mockError = new Error('Test Error');
-      expect(() => guard.handleRequest(mockError, null, null)).toThrow('Test Error');
+      expect(() => guard.handleRequest(mockError, null, null)).toThrow(
+        'Test Error',
+      );
     });
 
     it('should throw UnauthorizedException if no user is provided and no error', () => {
-      expect(() => guard.handleRequest(null, null, null)).toThrow(UnauthorizedException);
+      expect(() => guard.handleRequest(null, null, null)).toThrow(
+        UnauthorizedException,
+      );
     });
   });
 });

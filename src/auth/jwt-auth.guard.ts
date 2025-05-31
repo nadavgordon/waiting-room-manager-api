@@ -24,7 +24,9 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
    * @param context The execution context of the current request.
    * @returns A boolean, Promise, or Observable indicating authorization status.
    */
-  canActivate(context: ExecutionContext): boolean | Promise<boolean> | Observable<boolean> {
+  canActivate(
+    context: ExecutionContext,
+  ): boolean | Promise<boolean> | Observable<boolean> {
     return super.canActivate(context);
   }
 
@@ -40,7 +42,10 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
    */
   handleRequest(err: any, user: any, info: any) {
     if (err || !user) {
-      throw err || new UnauthorizedException(info?.message || 'User is not authenticated');
+      throw (
+        err ||
+        new UnauthorizedException(info?.message || 'User is not authenticated')
+      );
     }
     return user;
   }

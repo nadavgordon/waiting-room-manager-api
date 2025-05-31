@@ -69,7 +69,12 @@ export class PaginatedResponseDto<T> {
    * @param itemsPerPage The configured number of items per page.
    * @param currentPage The current page number being returned.
    */
-  constructor(data: T[], totalItems: number, itemsPerPage: number, currentPage: number) {
+  constructor(
+    data: T[],
+    totalItems: number,
+    itemsPerPage: number,
+    currentPage: number,
+  ) {
     this.data = data;
     this.totalItems = totalItems;
     this.itemCount = data.length;

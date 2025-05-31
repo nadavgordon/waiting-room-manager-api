@@ -24,7 +24,8 @@ describe('LoggerService (Unit)', () => {
    * with masked placeholders in log messages.
    */
   it('should mask PII (username and userId) in log messages', () => {
-    const originalMessage = 'User logged in: {"username":"testuser", "userId":"123e4567-e89b-12d3-a456-426614174000"}';
+    const originalMessage =
+      'User logged in: {"username":"testuser", "userId":"123e4567-e89b-12d3-a456-426614174000"}';
     // Directly call the private method for testing purposes
     const maskedMessage = (service as any).maskPII(originalMessage);
 
@@ -32,7 +33,9 @@ describe('LoggerService (Unit)', () => {
     expect(maskedMessage).not.toContain('123e4567-e89b-12d3-a456-426614174000');
     expect(maskedMessage).toContain('[MASKED_USERNAME]');
     expect(maskedMessage).toContain('[MASKED_USERID]');
-    expect(maskedMessage).toMatch(/User logged in: {"username":"\[MASKED_USERNAME]", "userId":"\[MASKED_USERID]"}/);
+    expect(maskedMessage).toMatch(
+      /User logged in: {"username":"\[MASKED_USERNAME]", "userId":"\[MASKED_USERID]"}/,
+    );
   });
 
   /**
@@ -43,13 +46,17 @@ describe('LoggerService (Unit)', () => {
   it('should sanitize log messages by escaping newlines and null bytes', () => {
     const maliciousMessage = 'User input: Hello\nWorld!\r\nAnother line.\0';
     // Directly call the private method for testing purposes
-    const sanitizedMessage = (service as any).sanitizeLogMessage(maliciousMessage);
+    const sanitizedMessage = (service as any).sanitizeLogMessage(
+      maliciousMessage,
+    );
 
     expect(sanitizedMessage).not.toContain('\n');
     expect(sanitizedMessage).not.toContain('\r');
     expect(sanitizedMessage).not.toContain('\0');
     expect(sanitizedMessage).toContain('\\n');
     expect(sanitizedMessage).toContain('\\0');
-    expect(sanitizedMessage).toBe('User input: Hello\\nWorld!\\nAnother line.\\0');
+    expect(sanitizedMessage).toBe(
+      'User input: Hello\\nWorld!\\nAnother line.\\0',
+    );
   });
 });

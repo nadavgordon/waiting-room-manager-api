@@ -18,7 +18,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       // Ensures that expired tokens are rejected, enhancing security.
       ignoreExpiration: false,
       // The secret key used to verify the JWT's signature, retrieved from environment variables.
-      secretOrKey: configService.get<string>('JWT_SECRET') || 'fallback_secret_for_dev_only', // Fallback for development, ensure this is strong in production
+      secretOrKey:
+        configService.get<string>('JWT_SECRET') ||
+        'fallback_secret_for_dev_only', // Fallback for development, ensure this is strong in production
     });
   }
 

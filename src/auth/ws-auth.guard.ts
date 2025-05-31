@@ -1,4 +1,9 @@
-import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Observable } from 'rxjs';
 import { Socket } from 'socket.io';
@@ -9,7 +14,9 @@ export class WsAuthGuard extends AuthGuard('jwt') implements CanActivate {
     super();
   }
 
-  canActivate(context: ExecutionContext): boolean | Promise<boolean> | Observable<boolean> {
+  canActivate(
+    context: ExecutionContext,
+  ): boolean | Promise<boolean> | Observable<boolean> {
     const client: Socket = context.switchToWs().getClient();
     const authToken = client.handshake.headers.authorization?.split(' ')[1];
 

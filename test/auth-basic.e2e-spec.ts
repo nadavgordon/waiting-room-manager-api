@@ -15,19 +15,23 @@ describe('Auth Basic (e2e)', () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
         AppModule,
-        ThrottlerModule.forRoot([{
-          ttl: 60000, // 1 minute
-          limit: 50, // Increased limit for testing purposes
-        }]),
+        ThrottlerModule.forRoot([
+          {
+            ttl: 60000, // 1 minute
+            limit: 50, // Increased limit for testing purposes
+          },
+        ]),
       ],
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(new (require('@nestjs/common').ValidationPipe)({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    }));
+    app.useGlobalPipes(
+      new (require('@nestjs/common').ValidationPipe)({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+      }),
+    );
     await app.init();
   });
 
@@ -50,7 +54,9 @@ describe('Auth Basic (e2e)', () => {
       .send({ username: 'testuser2', password: 'Pass1!' })
       .expect(400)
       .expect((res) => {
-        expect(res.body.message).toContain('Password must be at least 8 characters long');
+        expect(res.body.message).toContain(
+          'Password must be at least 8 characters long',
+        );
       });
   });
 
@@ -60,7 +66,9 @@ describe('Auth Basic (e2e)', () => {
       .send({ username: 'testuser3', password: 'password123!' })
       .expect(400)
       .expect((res) => {
-        expect(res.body.message).toContain('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character, and be between 8 and 12 characters long');
+        expect(res.body.message).toContain(
+          'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character, and be between 8 and 12 characters long',
+        );
       });
   });
 
@@ -70,7 +78,9 @@ describe('Auth Basic (e2e)', () => {
       .send({ username: 'testuser4', password: 'PASSWORD123!' })
       .expect(400)
       .expect((res) => {
-        expect(res.body.message).toContain('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character, and be between 8 and 12 characters long');
+        expect(res.body.message).toContain(
+          'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character, and be between 8 and 12 characters long',
+        );
       });
   });
 
@@ -80,7 +90,9 @@ describe('Auth Basic (e2e)', () => {
       .send({ username: 'testuser5', password: 'Password!!' })
       .expect(400)
       .expect((res) => {
-        expect(res.body.message).toContain('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character, and be between 8 and 12 characters long');
+        expect(res.body.message).toContain(
+          'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character, and be between 8 and 12 characters long',
+        );
       });
   });
 
@@ -90,7 +102,9 @@ describe('Auth Basic (e2e)', () => {
       .send({ username: 'testuser6', password: 'Password123' })
       .expect(400)
       .expect((res) => {
-        expect(res.body.message).toContain('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character, and be between 8 and 12 characters long');
+        expect(res.body.message).toContain(
+          'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character, and be between 8 and 12 characters long',
+        );
       });
   });
 
@@ -100,7 +114,9 @@ describe('Auth Basic (e2e)', () => {
       .send({ username: 'testuser7', password: 'Password12345!' })
       .expect(400)
       .expect((res) => {
-        expect(res.body.message).toContain('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character, and be between 8 and 12 characters long');
+        expect(res.body.message).toContain(
+          'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character, and be between 8 and 12 characters long',
+        );
       });
   });
 });

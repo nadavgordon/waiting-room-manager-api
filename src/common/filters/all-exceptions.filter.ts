@@ -20,13 +20,8 @@ export class AllExceptionsFilter extends BaseExceptionFilter {
    */
   private readonly logger = createLogger({
     level: process.env.LOG_LEVEL || 'info',
-    format: format.combine(
-      format.timestamp(),
-      format.json(),
-    ),
-    transports: [
-      new transports.Console(),
-    ],
+    format: format.combine(format.timestamp(), format.json()),
+    transports: [new transports.Console()],
   });
 
   /**

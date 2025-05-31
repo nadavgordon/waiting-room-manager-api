@@ -25,11 +25,15 @@ async function bootstrap() {
   const jwtSecret = configService.get<string>('JWT_SECRET');
 
   if (!jwtSecret) {
-    throw new Error('JWT_SECRET environment variable is not defined. Please set a strong secret.');
+    throw new Error(
+      'JWT_SECRET environment variable is not defined. Please set a strong secret.',
+    );
   }
 
   if (jwtSecret.length < 32) {
-    throw new Error('JWT_SECRET must be at least 32 characters long for security reasons.');
+    throw new Error(
+      'JWT_SECRET must be at least 32 characters long for security reasons.',
+    );
   }
 
   // Apply a global exception filter to standardize error responses.
@@ -40,8 +44,15 @@ async function bootstrap() {
 
   // Configure Cross-Origin Resource Sharing (CORS) for frontend integration.
   // This controls which origins are allowed to make requests to the API, enhancing security.
-  const corsOrigins = process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : [];
-  app.get(LoggerService).log(`CORS_ORIGINS configured: ${corsOrigins.length > 0 ? corsOrigins.join(', ') : 'None (restrictive default)'}`, 'CORS');
+  const corsOrigins = process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(',')
+    : [];
+  app
+    .get(LoggerService)
+    .log(
+      `CORS_ORIGINS configured: ${corsOrigins.length > 0 ? corsOrigins.join(', ') : 'None (restrictive default)'}`,
+      'CORS',
+    );
   app.enableCors({
     origin: corsOrigins,
     credentials: true,
@@ -103,7 +114,9 @@ async function bootstrap() {
   // This provides a user-friendly interface to understand and test API endpoints.
   const config = new DocumentBuilder()
     .setTitle('Waiting Room Manager API')
-    .setDescription('Comprehensive API for managing waiting rooms, user authentication, and real-time game interactions. Provides robust security, logging, and scalable architecture.')
+    .setDescription(
+      'Comprehensive API for managing waiting rooms, user authentication, and real-time game interactions. Provides robust security, logging, and scalable architecture.',
+    )
     .setVersion('1.0.0')
     .addBearerAuth(
       {
@@ -117,7 +130,10 @@ async function bootstrap() {
     )
     .addTag('Auth', 'User authentication and authorization endpoints')
     .addTag('User', 'User management endpoints')
-    .addTag('WaitingRoom', 'Waiting room creation, management, and real-time interaction endpoints')
+    .addTag(
+      'WaitingRoom',
+      'Waiting room creation, management, and real-time interaction endpoints',
+    )
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);

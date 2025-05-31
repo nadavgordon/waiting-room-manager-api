@@ -58,7 +58,9 @@ import { TestLoggingModule } from './test-logging/test-logging.module';
         password: (() => {
           const redisPassword = configService.get<string>('REDIS_PASSWORD');
           if (process.env.NODE_ENV === 'production' && !redisPassword) {
-            throw new Error('REDIS_PASSWORD must be set in production environment.');
+            throw new Error(
+              'REDIS_PASSWORD must be set in production environment.',
+            );
           }
           return redisPassword || undefined;
         })(),
@@ -70,10 +72,12 @@ import { TestLoggingModule } from './test-logging/test-logging.module';
     // ThrottlerModule: Configures rate limiting for the application.
     // `ttl` defines the time window (in milliseconds) and `limit` defines the maximum requests within that window.
     // `isGlobal: true` makes the ThrottlerGuard available application-wide.
-    ThrottlerModule.forRoot([{
-      ttl: 60000, // 1 minute
-      limit: 10, // 10 requests per minute
-    }]),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000, // 1 minute
+        limit: 10, // 10 requests per minute
+      },
+    ]),
   ],
   controllers: [AppController],
   providers: [

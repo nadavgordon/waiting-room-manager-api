@@ -6,7 +6,11 @@ import { Room, RoomStatus } from '../src/waiting-room/entities/room.entity';
 import { RoomPlayer } from '../src/waiting-room/entities/room-player.entity';
 import { RoomPlayerStatus } from '../src/waiting-room/enums/room-player-status.enum';
 import { User } from '../src/user/entities/user.entity';
-import { NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { WaitingRoomGateway } from '../src/waiting-room/waiting-room.gateway';
 import { JoinRequestDecision } from '../src/waiting-room/dto/respond-to-join-request.dto';
@@ -132,7 +136,9 @@ describe('WaitingRoomService', () => {
 
     service = module.get<WaitingRoomService>(WaitingRoomService);
     roomRepository = module.get<Repository<Room>>(getRepositoryToken(Room));
-    roomPlayerRepository = module.get<Repository<RoomPlayer>>(getRepositoryToken(RoomPlayer));
+    roomPlayerRepository = module.get<Repository<RoomPlayer>>(
+      getRepositoryToken(RoomPlayer),
+    );
     userRepository = module.get<Repository<User>>(getRepositoryToken(User));
     waitingRoomGateway = module.get<WaitingRoomGateway>(WaitingRoomGateway);
     loggerService = module.get<LoggerService>(LoggerService);
@@ -163,10 +169,29 @@ describe('WaitingRoomService', () => {
      * to create a room and set the host's status.
      */
     it('should successfully create a room and add host as active player', async () => {
-      const createRoomDto = { name: 'Test Room', maxPlayers: 4, isPublic: true, approvalRequired: false };
+      const createRoomDto = {
+        name: 'Test Room',
+        maxPlayers: 4,
+        isPublic: true,
+        approvalRequired: false,
+      };
       const hostId = 'host-uuid';
-      const mockHost = { id: hostId, username: 'hostuser', createdAt: new Date(), updatedAt: new Date() } as User;
-      const mockRoom = { id: 'room-uuid', ...createRoomDto, hostId: hostId, host: mockHost, status: RoomStatus.WAITING, roomPlayers: [], createdAt: new Date(), updatedAt: new Date() };
+      const mockHost = {
+        id: hostId,
+        username: 'hostuser',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as User;
+      const mockRoom = {
+        id: 'room-uuid',
+        ...createRoomDto,
+        hostId: hostId,
+        host: mockHost,
+        status: RoomStatus.WAITING,
+        roomPlayers: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
 
       mockUserRepository.findOneBy.mockResolvedValue(mockHost);
       mockRoomRepository.create.mockReturnValue(mockRoom);
@@ -178,9 +203,11 @@ describe('WaitingRoomService', () => {
       const result = await service.createRoom(createRoomDto, hostId);
 
       expect(mockUserRepository.findOneBy).toHaveBeenCalledWith({ id: hostId });
-      expect(mockRoomRepository.create).toHaveBeenCalledWith(expect.objectContaining({
-        ...createRoomDto,
-      }));
+      expect(mockRoomRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          ...createRoomDto,
+        }),
+      );
       expect(mockRoomRepository.save).toHaveBeenCalledWith(mockRoom);
       expect(mockRoomPlayerRepository.create).toHaveBeenCalledWith({
         roomId: mockRoom.id,
@@ -189,9 +216,18 @@ describe('WaitingRoomService', () => {
       });
       expect(mockRoomPlayerRepository.save).toHaveBeenCalled();
       expect(waitingRoomGateway.emitRoomUpdate).toHaveBeenCalledWith(mockRoom);
-      expect(loggerService.log).toHaveBeenCalledWith(`Attempting to create room for host: ${hostId}`, 'WaitingRoomService');
-      expect(loggerService.log).toHaveBeenCalledWith(`Room created with ID: ${mockRoom.id} by host: ${hostId}`, 'WaitingRoomService');
-      expect(loggerService.log).toHaveBeenCalledWith(`Host ${hostId} added as active player to room ${mockRoom.id}`, 'WaitingRoomService');
+      expect(loggerService.log).toHaveBeenCalledWith(
+        `Attempting to create room for host: ${hostId}`,
+        'WaitingRoomService',
+      );
+      expect(loggerService.log).toHaveBeenCalledWith(
+        `Room created with ID: ${mockRoom.id} by host: ${hostId}`,
+        'WaitingRoomService',
+      );
+      expect(loggerService.log).toHaveBeenCalledWith(
+        `Host ${hostId} added as active player to room ${mockRoom.id}`,
+        'WaitingRoomService',
+      );
       expect(result).toEqual(mockRoom);
     });
 
@@ -201,12 +237,22 @@ describe('WaitingRoomService', () => {
      */
     it('should throw NotFoundException if host not found', async () => {
       mockUserRepository.findOneBy.mockResolvedValue(null); // Simulate host not found
-      const createRoomDto = { name: 'Test Room', maxPlayers: 4, isPublic: true, approvalRequired: false };
+      const createRoomDto = {
+        name: 'Test Room',
+        maxPlayers: 4,
+        isPublic: true,
+        approvalRequired: false,
+      };
       const hostId = 'non-existent-host';
 
-      await expect(service.createRoom(createRoomDto, hostId)).rejects.toThrow(NotFoundException);
+      await expect(service.createRoom(createRoomDto, hostId)).rejects.toThrow(
+        NotFoundException,
+      );
       expect(mockUserRepository.findOneBy).toHaveBeenCalledWith({ id: hostId });
-      expect(loggerService.error).toHaveBeenCalledWith(`Host with ID "${hostId}" not found during room creation.`, 'WaitingRoomService');
+      expect(loggerService.error).toHaveBeenCalledWith(
+        `Host with ID "${hostId}" not found during room creation.`,
+        'WaitingRoomService',
+      );
     });
   });
 
@@ -220,18 +266,48 @@ describe('WaitingRoomService', () => {
      */
     it('should return paginated public rooms if no userId is provided', async () => {
       const mockRooms = [
-        { id: 'room1', name: 'Public Room 1', isPublic: true, approvalRequired: false, maxPlayers: 10, status: RoomStatus.WAITING, hostId: 'host1', createdAt: new Date(), updatedAt: new Date() },
-        { id: 'room2', name: 'Public Room 2', isPublic: true, approvalRequired: false, maxPlayers: 10, status: RoomStatus.WAITING, hostId: 'host2', createdAt: new Date(), updatedAt: new Date() },
+        {
+          id: 'room1',
+          name: 'Public Room 1',
+          isPublic: true,
+          approvalRequired: false,
+          maxPlayers: 10,
+          status: RoomStatus.WAITING,
+          hostId: 'host1',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: 'room2',
+          name: 'Public Room 2',
+          isPublic: true,
+          approvalRequired: false,
+          maxPlayers: 10,
+          status: RoomStatus.WAITING,
+          hostId: 'host2',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
       ] as Room[];
       const total = 2;
-      mockRoomRepository.createQueryBuilder().getManyAndCount.mockResolvedValue([mockRooms, total]);
+      mockRoomRepository
+        .createQueryBuilder()
+        .getManyAndCount.mockResolvedValue([mockRooms, total]);
 
       const result = await service.findAllRooms('anonymous', 1, 10); // 'anonymous' userId
       expect(result.rooms).toEqual(mockRooms);
       expect(result.total).toEqual(total);
-      expect(mockRoomRepository.createQueryBuilder().where).toHaveBeenCalledWith('room.isPublic = :isPublicTrue', { isPublicTrue: true });
-      expect(mockRoomRepository.createQueryBuilder().skip).toHaveBeenCalledWith(0);
-      expect(mockRoomRepository.createQueryBuilder().take).toHaveBeenCalledWith(10);
+      expect(
+        mockRoomRepository.createQueryBuilder().where,
+      ).toHaveBeenCalledWith('room.isPublic = :isPublicTrue', {
+        isPublicTrue: true,
+      });
+      expect(mockRoomRepository.createQueryBuilder().skip).toHaveBeenCalledWith(
+        0,
+      );
+      expect(mockRoomRepository.createQueryBuilder().take).toHaveBeenCalledWith(
+        10,
+      );
     });
 
     /**
@@ -241,23 +317,62 @@ describe('WaitingRoomService', () => {
     it('should return paginated public rooms and rooms where user is host or active player if userId is provided', async () => {
       const userId = 'user-id';
       const mockRooms = [
-        { id: 'room1', name: 'Public Room 1', isPublic: true, approvalRequired: false, maxPlayers: 10, status: RoomStatus.WAITING, hostId: 'host1', createdAt: new Date(), updatedAt: new Date() },
-        { id: 'room2', name: 'Private Room Host', isPublic: false, approvalRequired: true, maxPlayers: 10, status: RoomStatus.WAITING, hostId: userId, createdAt: new Date(), updatedAt: new Date() },
+        {
+          id: 'room1',
+          name: 'Public Room 1',
+          isPublic: true,
+          approvalRequired: false,
+          maxPlayers: 10,
+          status: RoomStatus.WAITING,
+          hostId: 'host1',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: 'room2',
+          name: 'Private Room Host',
+          isPublic: false,
+          approvalRequired: true,
+          maxPlayers: 10,
+          status: RoomStatus.WAITING,
+          hostId: userId,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
       ] as Room[];
       const total = 2;
-      mockRoomRepository.createQueryBuilder().getManyAndCount.mockResolvedValue([mockRooms, total]);
+      mockRoomRepository
+        .createQueryBuilder()
+        .getManyAndCount.mockResolvedValue([mockRooms, total]);
 
       const result = await service.findAllRooms(userId, 1, 10);
       expect(result.rooms).toEqual(mockRooms);
       expect(result.total).toEqual(total);
-      expect(mockRoomRepository.createQueryBuilder().where).toHaveBeenCalledWith('room.isPublic = :isPublicTrue', { isPublicTrue: true });
-      expect(mockRoomRepository.createQueryBuilder().orWhere).toHaveBeenCalledWith('room.hostId = :currentUserId', { currentUserId: userId });
-      expect(mockRoomRepository.createQueryBuilder().orWhere).toHaveBeenCalledWith('roomPlayer.userId = :currentUserId AND roomPlayer.status = :activeStatus', {
-        currentUserId: userId,
-        activeStatus: RoomPlayerStatus.ACTIVE,
+      expect(
+        mockRoomRepository.createQueryBuilder().where,
+      ).toHaveBeenCalledWith('room.isPublic = :isPublicTrue', {
+        isPublicTrue: true,
       });
-      expect(mockRoomRepository.createQueryBuilder().skip).toHaveBeenCalledWith(0);
-      expect(mockRoomRepository.createQueryBuilder().take).toHaveBeenCalledWith(10);
+      expect(
+        mockRoomRepository.createQueryBuilder().orWhere,
+      ).toHaveBeenCalledWith('room.hostId = :currentUserId', {
+        currentUserId: userId,
+      });
+      expect(
+        mockRoomRepository.createQueryBuilder().orWhere,
+      ).toHaveBeenCalledWith(
+        'roomPlayer.userId = :currentUserId AND roomPlayer.status = :activeStatus',
+        {
+          currentUserId: userId,
+          activeStatus: RoomPlayerStatus.ACTIVE,
+        },
+      );
+      expect(mockRoomRepository.createQueryBuilder().skip).toHaveBeenCalledWith(
+        0,
+      );
+      expect(mockRoomRepository.createQueryBuilder().take).toHaveBeenCalledWith(
+        10,
+      );
     });
 
     /**
@@ -267,16 +382,32 @@ describe('WaitingRoomService', () => {
     it('should handle different page and limit values', async () => {
       const userId = 'user-id';
       const mockRooms = [
-        { id: 'room3', name: 'Public Room 3', isPublic: true, approvalRequired: false, maxPlayers: 10, status: RoomStatus.WAITING, hostId: 'host3', createdAt: new Date(), updatedAt: new Date() },
+        {
+          id: 'room3',
+          name: 'Public Room 3',
+          isPublic: true,
+          approvalRequired: false,
+          maxPlayers: 10,
+          status: RoomStatus.WAITING,
+          hostId: 'host3',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
       ] as Room[];
       const total = 5;
-      mockRoomRepository.createQueryBuilder().getManyAndCount.mockResolvedValue([mockRooms, total]);
+      mockRoomRepository
+        .createQueryBuilder()
+        .getManyAndCount.mockResolvedValue([mockRooms, total]);
 
       const result = await service.findAllRooms(userId, 2, 1); // Page 2, limit 1
       expect(result.rooms).toEqual(mockRooms);
       expect(result.total).toEqual(total);
-      expect(mockRoomRepository.createQueryBuilder().skip).toHaveBeenCalledWith(1); // (page - 1) * limit = (2 - 1) * 1 = 1
-      expect(mockRoomRepository.createQueryBuilder().take).toHaveBeenCalledWith(1); // limit = 1
+      expect(mockRoomRepository.createQueryBuilder().skip).toHaveBeenCalledWith(
+        1,
+      ); // (page - 1) * limit = (2 - 1) * 1 = 1
+      expect(mockRoomRepository.createQueryBuilder().take).toHaveBeenCalledWith(
+        1,
+      ); // limit = 1
     });
   });
 
@@ -297,7 +428,12 @@ describe('WaitingRoomService', () => {
         maxPlayers: 10,
         status: RoomStatus.WAITING,
         hostId: 'host-uuid',
-        host: { id: 'host-uuid', username: 'hostuser', createdAt: new Date(), updatedAt: new Date() } as User,
+        host: {
+          id: 'host-uuid',
+          username: 'hostuser',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as User,
         roomPlayers: [],
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -310,8 +446,14 @@ describe('WaitingRoomService', () => {
         where: { id: 'room-uuid' },
         relations: ['host', 'roomPlayers', 'roomPlayers.player'], // Ensure relations are loaded
       });
-      expect(loggerService.log).toHaveBeenCalledWith('Attempting to find room by ID: room-uuid', 'WaitingRoomService');
-      expect(loggerService.log).toHaveBeenCalledWith('Room found with ID: room-uuid', 'WaitingRoomService');
+      expect(loggerService.log).toHaveBeenCalledWith(
+        'Attempting to find room by ID: room-uuid',
+        'WaitingRoomService',
+      );
+      expect(loggerService.log).toHaveBeenCalledWith(
+        'Room found with ID: room-uuid',
+        'WaitingRoomService',
+      );
     });
 
     /**
@@ -321,8 +463,13 @@ describe('WaitingRoomService', () => {
     it('should throw NotFoundException if room not found', async () => {
       mockCacheManager.get.mockResolvedValue(null); // Simulate cache miss
       mockRoomRepository.findOne.mockResolvedValue(null); // Simulate room not found in DB
-      await expect(service.findRoomById('non-existent-room')).rejects.toThrow(NotFoundException);
-      expect(loggerService.warn).toHaveBeenCalledWith('Room with ID "non-existent-room" not found.', 'WaitingRoomService');
+      await expect(service.findRoomById('non-existent-room')).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(loggerService.warn).toHaveBeenCalledWith(
+        'Room with ID "non-existent-room" not found.',
+        'WaitingRoomService',
+      );
     });
 
     /**
@@ -338,7 +485,12 @@ describe('WaitingRoomService', () => {
         maxPlayers: 10,
         status: RoomStatus.WAITING,
         hostId: 'host-uuid',
-        host: { id: 'host-uuid', username: 'hostuser', createdAt: new Date(), updatedAt: new Date() } as User,
+        host: {
+          id: 'host-uuid',
+          username: 'hostuser',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as User,
         roomPlayers: [],
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -351,7 +503,10 @@ describe('WaitingRoomService', () => {
       expect(result).toEqual(mockRoom);
       expect(mockCacheManager.get).toHaveBeenCalledWith('room_room-uuid');
       expect(mockRoomRepository.findOne).not.toHaveBeenCalled(); // Verify cache hit, DB not queried
-      expect(loggerService.log).toHaveBeenCalledWith('Room with ID: room-uuid found in cache.', 'WaitingRoomService');
+      expect(loggerService.log).toHaveBeenCalledWith(
+        'Room with ID: room-uuid found in cache.',
+        'WaitingRoomService',
+      );
     });
 
     /**
@@ -367,7 +522,12 @@ describe('WaitingRoomService', () => {
         maxPlayers: 10,
         status: RoomStatus.WAITING,
         hostId: 'host-uuid',
-        host: { id: 'host-uuid', username: 'hostuser', createdAt: new Date(), updatedAt: new Date() } as User,
+        host: {
+          id: 'host-uuid',
+          username: 'hostuser',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as User,
         roomPlayers: [],
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -384,8 +544,14 @@ describe('WaitingRoomService', () => {
         where: { id: 'room-uuid' },
         relations: ['host', 'roomPlayers', 'roomPlayers.player'],
       });
-      expect(mockCacheManager.set).toHaveBeenCalledWith('room_room-uuid', mockRoom); // Verify caching
-      expect(loggerService.log).toHaveBeenCalledWith('Room found with ID: room-uuid and cached.', 'WaitingRoomService');
+      expect(mockCacheManager.set).toHaveBeenCalledWith(
+        'room_room-uuid',
+        mockRoom,
+      ); // Verify caching
+      expect(loggerService.log).toHaveBeenCalledWith(
+        'Room found with ID: room-uuid and cached.',
+        'WaitingRoomService',
+      );
     });
   });
 
@@ -409,7 +575,12 @@ describe('WaitingRoomService', () => {
         approvalRequired: false,
         maxPlayers: 10,
         status: RoomStatus.WAITING,
-        host: { id: hostId, username: 'hostuser', createdAt: new Date(), updatedAt: new Date() } as User,
+        host: {
+          id: hostId,
+          username: 'hostuser',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as User,
         roomPlayers: [],
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -422,11 +593,22 @@ describe('WaitingRoomService', () => {
       const result = await service.updateRoom(roomId, updateRoomDto, hostId);
       expect(result).toEqual(updatedRoom);
       expect(mockRoomRepository.save).toHaveBeenCalledWith(updatedRoom);
-      expect(waitingRoomGateway.emitRoomUpdate).toHaveBeenCalledWith(updatedRoom);
+      expect(waitingRoomGateway.emitRoomUpdate).toHaveBeenCalledWith(
+        updatedRoom,
+      );
       expect(cacheManager.del).toHaveBeenCalledWith(`room_${roomId}`); // Verify cache invalidation
-      expect(loggerService.log).toHaveBeenCalledWith(`Attempting to update room ${roomId} by host: ${hostId}`, 'WaitingRoomService');
-      expect(loggerService.log).toHaveBeenCalledWith(`Room ${roomId} updated successfully by host: ${hostId}`, 'WaitingRoomService');
-      expect(loggerService.log).toHaveBeenCalledWith(`Cache for room ${roomId} invalidated due to update.`, 'WaitingRoomService');
+      expect(loggerService.log).toHaveBeenCalledWith(
+        `Attempting to update room ${roomId} by host: ${hostId}`,
+        'WaitingRoomService',
+      );
+      expect(loggerService.log).toHaveBeenCalledWith(
+        `Room ${roomId} updated successfully by host: ${hostId}`,
+        'WaitingRoomService',
+      );
+      expect(loggerService.log).toHaveBeenCalledWith(
+        `Cache for room ${roomId} invalidated due to update.`,
+        'WaitingRoomService',
+      );
     });
 
     /**
@@ -445,7 +627,12 @@ describe('WaitingRoomService', () => {
         approvalRequired: false,
         maxPlayers: 10,
         status: RoomStatus.WAITING,
-        host: { id: 'original-host-uuid', username: 'originalhost', createdAt: new Date(), updatedAt: new Date() } as User,
+        host: {
+          id: 'original-host-uuid',
+          username: 'originalhost',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as User,
         roomPlayers: [],
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -453,8 +640,13 @@ describe('WaitingRoomService', () => {
 
       jest.spyOn(service, 'findRoomById').mockResolvedValue(existingRoom);
 
-      await expect(service.updateRoom(roomId, updateRoomDto, hostId)).rejects.toThrow(ForbiddenException);
-      expect(loggerService.warn).toHaveBeenCalledWith(`Forbidden: Host ${hostId} attempted to update room ${roomId} which they do not own.`, 'WaitingRoomService');
+      await expect(
+        service.updateRoom(roomId, updateRoomDto, hostId),
+      ).rejects.toThrow(ForbiddenException);
+      expect(loggerService.warn).toHaveBeenCalledWith(
+        `Forbidden: Host ${hostId} attempted to update room ${roomId} which they do not own.`,
+        'WaitingRoomService',
+      );
     });
   });
 
@@ -477,7 +669,12 @@ describe('WaitingRoomService', () => {
         approvalRequired: false,
         maxPlayers: 10,
         status: RoomStatus.WAITING,
-        host: { id: hostId, username: 'hostuser', createdAt: new Date(), updatedAt: new Date() } as User,
+        host: {
+          id: hostId,
+          username: 'hostuser',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as User,
         roomPlayers: [],
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -488,14 +685,30 @@ describe('WaitingRoomService', () => {
       mockRoomRepository.delete.mockResolvedValue({ affected: 1 }); // Simulate room deletion
 
       const result = await service.deleteRoom(roomId, hostId);
-      expect(result).toEqual({ message: `Room with ID "${roomId}" successfully deleted.` });
-      expect(mockRoomPlayerRepository.delete).toHaveBeenCalledWith({ roomId: roomId }); // Verify player deletion
+      expect(result).toEqual({
+        message: `Room with ID "${roomId}" successfully deleted.`,
+      });
+      expect(mockRoomPlayerRepository.delete).toHaveBeenCalledWith({
+        roomId: roomId,
+      }); // Verify player deletion
       expect(mockRoomRepository.delete).toHaveBeenCalledWith(roomId); // Verify room deletion
-      expect(waitingRoomGateway.emitRoomUpdate).toHaveBeenCalledWith({ id: roomId, status: RoomStatus.FINISHED }); // Notify clients
+      expect(waitingRoomGateway.emitRoomUpdate).toHaveBeenCalledWith({
+        id: roomId,
+        status: RoomStatus.FINISHED,
+      }); // Notify clients
       expect(cacheManager.del).toHaveBeenCalledWith(`room_${roomId}`); // Verify cache invalidation
-      expect(loggerService.log).toHaveBeenCalledWith(`Attempting to delete room ${roomId} by host: ${hostId}`, 'WaitingRoomService');
-      expect(loggerService.log).toHaveBeenCalledWith(`Room with ID "${roomId}" successfully deleted by host: ${hostId}`, 'WaitingRoomService');
-      expect(loggerService.log).toHaveBeenCalledWith(`Cache for room ${roomId} invalidated due to deletion.`, 'WaitingRoomService');
+      expect(loggerService.log).toHaveBeenCalledWith(
+        `Attempting to delete room ${roomId} by host: ${hostId}`,
+        'WaitingRoomService',
+      );
+      expect(loggerService.log).toHaveBeenCalledWith(
+        `Room with ID "${roomId}" successfully deleted by host: ${hostId}`,
+        'WaitingRoomService',
+      );
+      expect(loggerService.log).toHaveBeenCalledWith(
+        `Cache for room ${roomId} invalidated due to deletion.`,
+        'WaitingRoomService',
+      );
     });
 
     /**
@@ -513,7 +726,12 @@ describe('WaitingRoomService', () => {
         approvalRequired: false,
         maxPlayers: 10,
         status: RoomStatus.WAITING,
-        host: { id: hostId, username: 'hostuser', createdAt: new Date(), updatedAt: new Date() } as User,
+        host: {
+          id: hostId,
+          username: 'hostuser',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as User,
         roomPlayers: [],
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -523,8 +741,13 @@ describe('WaitingRoomService', () => {
       mockRoomPlayerRepository.delete.mockResolvedValue({ affected: 1 });
       mockRoomRepository.delete.mockResolvedValue({ affected: 0 }); // Simulate no rows affected by room delete
 
-      await expect(service.deleteRoom(roomId, hostId)).rejects.toThrow(NotFoundException);
-      expect(loggerService.error).toHaveBeenCalledWith(`Room with ID "${roomId}" could not be deleted or was already deleted.`, 'WaitingRoomService');
+      await expect(service.deleteRoom(roomId, hostId)).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(loggerService.error).toHaveBeenCalledWith(
+        `Room with ID "${roomId}" could not be deleted or was already deleted.`,
+        'WaitingRoomService',
+      );
     });
 
     /**
@@ -533,10 +756,15 @@ describe('WaitingRoomService', () => {
      */
     it('should throw NotFoundException if room not found', async () => {
       mockRoomRepository.findOne.mockResolvedValue(null); // Simulate room not found
-      await expect(service.deleteRoom('non-existent-room', 'host-id')).rejects.toThrow(NotFoundException);
-      expect(loggerService.warn).toHaveBeenCalledWith('Room with ID "non-existent-room" not found for deletion.', 'WaitingRoomService');
+      await expect(
+        service.deleteRoom('non-existent-room', 'host-id'),
+      ).rejects.toThrow(NotFoundException);
+      expect(loggerService.warn).toHaveBeenCalledWith(
+        'Room with ID "non-existent-room" not found for deletion.',
+        'WaitingRoomService',
+      );
     });
-    
+
     /**
      * Test case: Should throw ForbiddenException if the host is not authorized to delete the room.
      * Ensures that only the room host can delete the room.
@@ -552,15 +780,25 @@ describe('WaitingRoomService', () => {
         approvalRequired: false,
         maxPlayers: 10,
         status: RoomStatus.WAITING,
-        host: { id: 'original-host-uuid', username: 'originalhost', createdAt: new Date(), updatedAt: new Date() } as User,
+        host: {
+          id: 'original-host-uuid',
+          username: 'originalhost',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as User,
         roomPlayers: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       } as Room;
 
       mockRoomRepository.findOne.mockResolvedValue(existingRoom);
-      await expect(service.deleteRoom(roomId, hostId)).rejects.toThrow(ForbiddenException);
-      expect(loggerService.warn).toHaveBeenCalledWith(`Forbidden: Host ${hostId} attempted to delete room ${roomId} which they do not own.`, 'WaitingRoomService');
+      await expect(service.deleteRoom(roomId, hostId)).rejects.toThrow(
+        ForbiddenException,
+      );
+      expect(loggerService.warn).toHaveBeenCalledWith(
+        `Forbidden: Host ${hostId} attempted to delete room ${roomId} which they do not own.`,
+        'WaitingRoomService',
+      );
     });
   });
 
@@ -583,12 +821,21 @@ describe('WaitingRoomService', () => {
         maxPlayers: 10,
         status: RoomStatus.WAITING,
         hostId: 'host-uuid',
-        host: { id: 'host-uuid', username: 'hostuser', createdAt: new Date(), updatedAt: new Date() } as User,
+        host: {
+          id: 'host-uuid',
+          username: 'hostuser',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as User,
         roomPlayers: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       } as Room;
-      const mockUser = { id: userId, createdAt: new Date(), updatedAt: new Date() } as User;
+      const mockUser = {
+        id: userId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as User;
 
       jest.spyOn(service, 'findRoomById').mockResolvedValue(mockRoom);
       mockUserRepository.findOneBy.mockResolvedValue(mockUser);
@@ -606,9 +853,18 @@ describe('WaitingRoomService', () => {
       });
       expect(waitingRoomGateway.emitRoomUpdate).toHaveBeenCalledWith(mockRoom);
       expect(cacheManager.del).toHaveBeenCalledWith(`room_${roomId}`); // Verify cache invalidation
-      expect(loggerService.log).toHaveBeenCalledWith(`Attempting to join room ${roomId} by user: ${userId}`, 'WaitingRoomService');
-      expect(loggerService.log).toHaveBeenCalledWith(`User ${userId} joined room ${roomId} as ACTIVE (public or no approval required).`, 'WaitingRoomService');
-      expect(loggerService.log).toHaveBeenCalledWith(`Cache for room ${roomId} invalidated due to join.`, 'WaitingRoomService');
+      expect(loggerService.log).toHaveBeenCalledWith(
+        `Attempting to join room ${roomId} by user: ${userId}`,
+        'WaitingRoomService',
+      );
+      expect(loggerService.log).toHaveBeenCalledWith(
+        `User ${userId} joined room ${roomId} as ACTIVE (public or no approval required).`,
+        'WaitingRoomService',
+      );
+      expect(loggerService.log).toHaveBeenCalledWith(
+        `Cache for room ${roomId} invalidated due to join.`,
+        'WaitingRoomService',
+      );
     });
 
     /**
@@ -626,12 +882,21 @@ describe('WaitingRoomService', () => {
         maxPlayers: 10,
         status: RoomStatus.WAITING,
         hostId: 'host-uuid',
-        host: { id: 'host-uuid', username: 'hostuser', createdAt: new Date(), updatedAt: new Date() } as User,
+        host: {
+          id: 'host-uuid',
+          username: 'hostuser',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as User,
         roomPlayers: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       } as Room;
-      const mockUser = { id: userId, createdAt: new Date(), updatedAt: new Date() } as User;
+      const mockUser = {
+        id: userId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as User;
 
       jest.spyOn(service, 'findRoomById').mockResolvedValue(mockRoom);
       mockUserRepository.findOneBy.mockResolvedValue(mockUser);
@@ -646,7 +911,10 @@ describe('WaitingRoomService', () => {
         userId: userId,
         status: RoomPlayerStatus.PENDING, // Should be pending
       });
-      expect(loggerService.log).toHaveBeenCalledWith(`User ${userId} join request for room ${roomId} set to PENDING (private, approval required).`, 'WaitingRoomService');
+      expect(loggerService.log).toHaveBeenCalledWith(
+        `User ${userId} join request for room ${roomId} set to PENDING (private, approval required).`,
+        'WaitingRoomService',
+      );
     });
 
     /**
@@ -664,21 +932,35 @@ describe('WaitingRoomService', () => {
         maxPlayers: 1, // Max players is 1
         status: RoomStatus.WAITING,
         hostId: 'host-uuid',
-        host: { id: 'host-uuid', username: 'hostuser', createdAt: new Date(), updatedAt: new Date() } as User,
+        host: {
+          id: 'host-uuid',
+          username: 'hostuser',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as User,
         roomPlayers: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       } as Room;
-      const mockUser = { id: userId, createdAt: new Date(), updatedAt: new Date() } as User;
+      const mockUser = {
+        id: userId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as User;
 
       jest.spyOn(service, 'findRoomById').mockResolvedValue(mockRoom);
       mockUserRepository.findOneBy.mockResolvedValue(mockUser);
       mockRoomPlayerRepository.findOne.mockResolvedValue(null);
       mockRoomPlayerRepository.count.mockResolvedValue(1); // Simulate 1 active player, so room is full
 
-      await expect(service.joinRoom(roomId, userId)).rejects.toThrow(BadRequestException);
+      await expect(service.joinRoom(roomId, userId)).rejects.toThrow(
+        BadRequestException,
+      );
       expect(mockRoomPlayerRepository.create).not.toHaveBeenCalled(); // No new player entry should be created
-      expect(loggerService.warn).toHaveBeenCalledWith(`Room ${roomId} is full. User ${userId} cannot join.`, 'WaitingRoomService');
+      expect(loggerService.warn).toHaveBeenCalledWith(
+        `Room ${roomId} is full. User ${userId} cannot join.`,
+        'WaitingRoomService',
+      );
     });
 
     /**
@@ -696,21 +978,39 @@ describe('WaitingRoomService', () => {
         maxPlayers: 10,
         status: RoomStatus.WAITING,
         hostId: 'host-uuid',
-        host: { id: 'host-uuid', username: 'hostuser', createdAt: new Date(), updatedAt: new Date() } as User,
+        host: {
+          id: 'host-uuid',
+          username: 'hostuser',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as User,
         roomPlayers: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       } as Room;
-      const mockUser = { id: userId, createdAt: new Date(), updatedAt: new Date() } as User;
-      const existingPlayer = { roomId, userId, status: RoomPlayerStatus.ACTIVE } as RoomPlayer; // Player already active
+      const mockUser = {
+        id: userId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as User;
+      const existingPlayer = {
+        roomId,
+        userId,
+        status: RoomPlayerStatus.ACTIVE,
+      } as RoomPlayer; // Player already active
 
       jest.spyOn(service, 'findRoomById').mockResolvedValue(mockRoom);
       mockUserRepository.findOneBy.mockResolvedValue(mockUser);
       mockRoomPlayerRepository.findOne.mockResolvedValue(existingPlayer);
 
-      await expect(service.joinRoom(roomId, userId)).rejects.toThrow(BadRequestException);
+      await expect(service.joinRoom(roomId, userId)).rejects.toThrow(
+        BadRequestException,
+      );
       expect(mockRoomPlayerRepository.create).not.toHaveBeenCalled();
-      expect(loggerService.warn).toHaveBeenCalledWith(`User ${userId} is already an active player in room ${roomId}.`, 'WaitingRoomService');
+      expect(loggerService.warn).toHaveBeenCalledWith(
+        `User ${userId} is already an active player in room ${roomId}.`,
+        'WaitingRoomService',
+      );
     });
 
     /**
@@ -728,21 +1028,39 @@ describe('WaitingRoomService', () => {
         maxPlayers: 10,
         status: RoomStatus.WAITING,
         hostId: 'host-uuid',
-        host: { id: 'host-uuid', username: 'hostuser', createdAt: new Date(), updatedAt: new Date() } as User,
+        host: {
+          id: 'host-uuid',
+          username: 'hostuser',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as User,
         roomPlayers: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       } as Room;
-      const mockUser = { id: userId, createdAt: new Date(), updatedAt: new Date() } as User;
-      const existingPlayer = { roomId, userId, status: RoomPlayerStatus.PENDING } as RoomPlayer; // Pending request exists
+      const mockUser = {
+        id: userId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as User;
+      const existingPlayer = {
+        roomId,
+        userId,
+        status: RoomPlayerStatus.PENDING,
+      } as RoomPlayer; // Pending request exists
 
       jest.spyOn(service, 'findRoomById').mockResolvedValue(mockRoom);
       mockUserRepository.findOneBy.mockResolvedValue(mockUser);
       mockRoomPlayerRepository.findOne.mockResolvedValue(existingPlayer);
 
-      await expect(service.joinRoom(roomId, userId)).rejects.toThrow(BadRequestException);
+      await expect(service.joinRoom(roomId, userId)).rejects.toThrow(
+        BadRequestException,
+      );
       expect(mockRoomPlayerRepository.create).not.toHaveBeenCalled();
-      expect(loggerService.warn).toHaveBeenCalledWith(`Join request already pending for user ${userId} in room ${roomId}.`, 'WaitingRoomService');
+      expect(loggerService.warn).toHaveBeenCalledWith(
+        `Join request already pending for user ${userId} in room ${roomId}.`,
+        'WaitingRoomService',
+      );
     });
 
     /**
@@ -760,19 +1078,29 @@ describe('WaitingRoomService', () => {
         maxPlayers: 10,
         status: RoomStatus.WAITING,
         hostId: 'host-uuid',
-        host: { id: 'host-uuid', username: 'hostuser', createdAt: new Date(), updatedAt: new Date() } as User,
+        host: {
+          id: 'host-uuid',
+          username: 'hostuser',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as User,
         roomPlayers: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       } as Room;
-    
+
       jest.spyOn(service, 'findRoomById').mockResolvedValue(mockRoom);
       mockUserRepository.findOneBy.mockResolvedValue(null); // Simulate user not found
-    
-      await expect(service.joinRoom(roomId, userId)).rejects.toThrow(NotFoundException);
-      expect(loggerService.error).toHaveBeenCalledWith(`User with ID "${userId}" not found during join room operation.`, 'WaitingRoomService');
+
+      await expect(service.joinRoom(roomId, userId)).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(loggerService.error).toHaveBeenCalledWith(
+        `User with ID "${userId}" not found during join room operation.`,
+        'WaitingRoomService',
+      );
     });
-    
+
     /**
      * Test case: Should remove an old room player entry if its status is not ACTIVE or PENDING.
      * This handles scenarios where a user might have previously left or been declined,
@@ -789,14 +1117,27 @@ describe('WaitingRoomService', () => {
         maxPlayers: 10,
         status: RoomStatus.WAITING,
         hostId: 'host-uuid',
-        host: { id: 'host-uuid', username: 'hostuser', createdAt: new Date(), updatedAt: new Date() } as User,
+        host: {
+          id: 'host-uuid',
+          username: 'hostuser',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as User,
         roomPlayers: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       } as Room;
-      const mockUser = { id: userId, createdAt: new Date(), updatedAt: new Date() } as User;
-      const existingPlayer = { roomId, userId, status: RoomPlayerStatus.LEFT } as RoomPlayer; // Simulate a previously left player
-    
+      const mockUser = {
+        id: userId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as User;
+      const existingPlayer = {
+        roomId,
+        userId,
+        status: RoomPlayerStatus.LEFT,
+      } as RoomPlayer; // Simulate a previously left player
+
       jest.spyOn(service, 'findRoomById').mockResolvedValue(mockRoom);
       mockUserRepository.findOneBy.mockResolvedValue(mockUser);
       mockRoomPlayerRepository.findOne.mockResolvedValue(existingPlayer); // Found old entry
@@ -804,15 +1145,20 @@ describe('WaitingRoomService', () => {
       mockRoomPlayerRepository.count.mockResolvedValue(0);
       mockRoomPlayerRepository.create.mockReturnValue({});
       mockRoomPlayerRepository.save.mockResolvedValue({});
-    
+
       await service.joinRoom(roomId, userId);
-      expect(mockRoomPlayerRepository.remove).toHaveBeenCalledWith(existingPlayer); // Verify old entry removed
+      expect(mockRoomPlayerRepository.remove).toHaveBeenCalledWith(
+        existingPlayer,
+      ); // Verify old entry removed
       expect(mockRoomPlayerRepository.create).toHaveBeenCalledWith({
         roomId: roomId,
         userId: userId,
         status: RoomPlayerStatus.ACTIVE, // New active entry created
       });
-      expect(loggerService.log).toHaveBeenCalledWith(`Removing old room player entry for user ${userId} in room ${roomId} (status: ${existingPlayer.status}).`, 'WaitingRoomService');
+      expect(loggerService.log).toHaveBeenCalledWith(
+        `Removing old room player entry for user ${userId} in room ${roomId} (status: ${existingPlayer.status}).`,
+        'WaitingRoomService',
+      );
     });
   });
 
@@ -836,27 +1182,55 @@ describe('WaitingRoomService', () => {
         approvalRequired: true,
         maxPlayers: 10,
         status: RoomStatus.WAITING,
-        host: { id: hostId, username: 'hostuser', createdAt: new Date(), updatedAt: new Date() } as User,
+        host: {
+          id: hostId,
+          username: 'hostuser',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as User,
         roomPlayers: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       } as Room;
-      const pendingRoomPlayer = { roomId, userId: pendingUserId, status: RoomPlayerStatus.PENDING } as RoomPlayer;
+      const pendingRoomPlayer = {
+        roomId,
+        userId: pendingUserId,
+        status: RoomPlayerStatus.PENDING,
+      } as RoomPlayer;
 
       jest.spyOn(service, 'findRoomById').mockResolvedValue(mockRoom);
       mockRoomPlayerRepository.findOne.mockResolvedValue(pendingRoomPlayer);
       mockRoomPlayerRepository.count.mockResolvedValue(0); // No active players yet
-      mockRoomPlayerRepository.save.mockResolvedValue({ ...pendingRoomPlayer, status: RoomPlayerStatus.ACTIVE });
+      mockRoomPlayerRepository.save.mockResolvedValue({
+        ...pendingRoomPlayer,
+        status: RoomPlayerStatus.ACTIVE,
+      });
 
-      const result = await service.approveOrDeclineJoinRequest(roomId, pendingUserId, JoinRequestDecision.APPROVE, hostId);
+      const result = await service.approveOrDeclineJoinRequest(
+        roomId,
+        pendingUserId,
+        JoinRequestDecision.APPROVE,
+        hostId,
+      );
       expect(result).toEqual(mockRoom); // findRoomById is called at the end
       expect(pendingRoomPlayer.status).toBe(RoomPlayerStatus.ACTIVE); // Verify status update
-      expect(mockRoomPlayerRepository.save).toHaveBeenCalledWith(pendingRoomPlayer);
+      expect(mockRoomPlayerRepository.save).toHaveBeenCalledWith(
+        pendingRoomPlayer,
+      );
       expect(waitingRoomGateway.emitRoomUpdate).toHaveBeenCalledWith(mockRoom);
       expect(cacheManager.del).toHaveBeenCalledWith(`room_${roomId}`); // Verify cache invalidation
-      expect(loggerService.log).toHaveBeenCalledWith(`Host ${hostId} attempting to ${JoinRequestDecision.APPROVE} join request for user ${pendingUserId} in room ${roomId}.`, 'WaitingRoomService');
-      expect(loggerService.log).toHaveBeenCalledWith(`Join request for user ${pendingUserId} in room ${roomId} APPROVED.`, 'WaitingRoomService');
-      expect(loggerService.log).toHaveBeenCalledWith(`Cache for room ${roomId} invalidated due to approval/decline.`, 'WaitingRoomService');
+      expect(loggerService.log).toHaveBeenCalledWith(
+        `Host ${hostId} attempting to ${JoinRequestDecision.APPROVE} join request for user ${pendingUserId} in room ${roomId}.`,
+        'WaitingRoomService',
+      );
+      expect(loggerService.log).toHaveBeenCalledWith(
+        `Join request for user ${pendingUserId} in room ${roomId} APPROVED.`,
+        'WaitingRoomService',
+      );
+      expect(loggerService.log).toHaveBeenCalledWith(
+        `Cache for room ${roomId} invalidated due to approval/decline.`,
+        'WaitingRoomService',
+      );
     });
 
     /**
@@ -875,26 +1249,54 @@ describe('WaitingRoomService', () => {
         approvalRequired: true,
         maxPlayers: 10,
         status: RoomStatus.WAITING,
-        host: { id: hostId, username: 'hostuser', createdAt: new Date(), updatedAt: new Date() } as User,
+        host: {
+          id: hostId,
+          username: 'hostuser',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as User,
         roomPlayers: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       } as Room;
-      const pendingRoomPlayer = { roomId, userId: pendingUserId, status: RoomPlayerStatus.PENDING } as RoomPlayer;
+      const pendingRoomPlayer = {
+        roomId,
+        userId: pendingUserId,
+        status: RoomPlayerStatus.PENDING,
+      } as RoomPlayer;
 
       jest.spyOn(service, 'findRoomById').mockResolvedValue(mockRoom);
       mockRoomPlayerRepository.findOne.mockResolvedValue(pendingRoomPlayer);
-      mockRoomPlayerRepository.save.mockResolvedValue({ ...pendingRoomPlayer, status: RoomPlayerStatus.DECLINED });
+      mockRoomPlayerRepository.save.mockResolvedValue({
+        ...pendingRoomPlayer,
+        status: RoomPlayerStatus.DECLINED,
+      });
 
-      const result = await service.approveOrDeclineJoinRequest(roomId, pendingUserId, JoinRequestDecision.DECLINE, hostId);
+      const result = await service.approveOrDeclineJoinRequest(
+        roomId,
+        pendingUserId,
+        JoinRequestDecision.DECLINE,
+        hostId,
+      );
       expect(result).toEqual(mockRoom);
       expect(pendingRoomPlayer.status).toBe(RoomPlayerStatus.DECLINED); // Verify status update
-      expect(mockRoomPlayerRepository.save).toHaveBeenCalledWith(pendingRoomPlayer);
+      expect(mockRoomPlayerRepository.save).toHaveBeenCalledWith(
+        pendingRoomPlayer,
+      );
       expect(waitingRoomGateway.emitRoomUpdate).toHaveBeenCalledWith(mockRoom);
       expect(cacheManager.del).toHaveBeenCalledWith(`room_${roomId}`); // Verify cache invalidation
-      expect(loggerService.log).toHaveBeenCalledWith(`Host ${hostId} attempting to ${JoinRequestDecision.DECLINE} join request for user ${pendingUserId} in room ${roomId}.`, 'WaitingRoomService');
-      expect(loggerService.log).toHaveBeenCalledWith(`Join request for user ${pendingUserId} in room ${roomId} DECLINED.`, 'WaitingRoomService');
-      expect(loggerService.log).toHaveBeenCalledWith(`Cache for room ${roomId} invalidated due to approval/decline.`, 'WaitingRoomService');
+      expect(loggerService.log).toHaveBeenCalledWith(
+        `Host ${hostId} attempting to ${JoinRequestDecision.DECLINE} join request for user ${pendingUserId} in room ${roomId}.`,
+        'WaitingRoomService',
+      );
+      expect(loggerService.log).toHaveBeenCalledWith(
+        `Join request for user ${pendingUserId} in room ${roomId} DECLINED.`,
+        'WaitingRoomService',
+      );
+      expect(loggerService.log).toHaveBeenCalledWith(
+        `Cache for room ${roomId} invalidated due to approval/decline.`,
+        'WaitingRoomService',
+      );
     });
 
     /**
@@ -913,7 +1315,12 @@ describe('WaitingRoomService', () => {
         approvalRequired: true,
         maxPlayers: 10,
         status: RoomStatus.WAITING,
-        host: { id: 'original-host-uuid', username: 'originalhost', createdAt: new Date(), updatedAt: new Date() } as User,
+        host: {
+          id: 'original-host-uuid',
+          username: 'originalhost',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as User,
         roomPlayers: [],
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -921,8 +1328,18 @@ describe('WaitingRoomService', () => {
 
       jest.spyOn(service, 'findRoomById').mockResolvedValue(mockRoom);
 
-      await expect(service.approveOrDeclineJoinRequest(roomId, pendingUserId, JoinRequestDecision.APPROVE, hostId)).rejects.toThrow(ForbiddenException);
-      expect(loggerService.warn).toHaveBeenCalledWith(`Forbidden: Host ${hostId} attempted to approve/decline request in room ${roomId} which they do not own.`, 'WaitingRoomService');
+      await expect(
+        service.approveOrDeclineJoinRequest(
+          roomId,
+          pendingUserId,
+          JoinRequestDecision.APPROVE,
+          hostId,
+        ),
+      ).rejects.toThrow(ForbiddenException);
+      expect(loggerService.warn).toHaveBeenCalledWith(
+        `Forbidden: Host ${hostId} attempted to approve/decline request in room ${roomId} which they do not own.`,
+        'WaitingRoomService',
+      );
     });
 
     /**
@@ -941,7 +1358,12 @@ describe('WaitingRoomService', () => {
         approvalRequired: false, // Approval not required
         maxPlayers: 10,
         status: RoomStatus.WAITING,
-        host: { id: hostId, username: 'hostuser', createdAt: new Date(), updatedAt: new Date() } as User,
+        host: {
+          id: hostId,
+          username: 'hostuser',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as User,
         roomPlayers: [],
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -949,8 +1371,18 @@ describe('WaitingRoomService', () => {
 
       jest.spyOn(service, 'findRoomById').mockResolvedValue(mockRoom);
 
-      await expect(service.approveOrDeclineJoinRequest(roomId, pendingUserId, JoinRequestDecision.APPROVE, hostId)).rejects.toThrow(BadRequestException);
-      expect(loggerService.warn).toHaveBeenCalledWith(`Room ${roomId} does not require approval, but host ${hostId} attempted to approve/decline.`, 'WaitingRoomService');
+      await expect(
+        service.approveOrDeclineJoinRequest(
+          roomId,
+          pendingUserId,
+          JoinRequestDecision.APPROVE,
+          hostId,
+        ),
+      ).rejects.toThrow(BadRequestException);
+      expect(loggerService.warn).toHaveBeenCalledWith(
+        `Room ${roomId} does not require approval, but host ${hostId} attempted to approve/decline.`,
+        'WaitingRoomService',
+      );
     });
 
     /**
@@ -969,7 +1401,12 @@ describe('WaitingRoomService', () => {
         approvalRequired: true,
         maxPlayers: 10,
         status: RoomStatus.WAITING,
-        host: { id: hostId, username: 'hostuser', createdAt: new Date(), updatedAt: new Date() } as User,
+        host: {
+          id: hostId,
+          username: 'hostuser',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as User,
         roomPlayers: [],
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -978,8 +1415,18 @@ describe('WaitingRoomService', () => {
       jest.spyOn(service, 'findRoomById').mockResolvedValue(mockRoom);
       mockRoomPlayerRepository.findOne.mockResolvedValue(null); // Simulate pending request not found
 
-      await expect(service.approveOrDeclineJoinRequest(roomId, pendingUserId, JoinRequestDecision.APPROVE, hostId)).rejects.toThrow(NotFoundException);
-      expect(loggerService.warn).toHaveBeenCalledWith(`Join request for user "${pendingUserId}" in room ${roomId} not found or already processed.`, 'WaitingRoomService');
+      await expect(
+        service.approveOrDeclineJoinRequest(
+          roomId,
+          pendingUserId,
+          JoinRequestDecision.APPROVE,
+          hostId,
+        ),
+      ).rejects.toThrow(NotFoundException);
+      expect(loggerService.warn).toHaveBeenCalledWith(
+        `Join request for user "${pendingUserId}" in room ${roomId} not found or already processed.`,
+        'WaitingRoomService',
+      );
     });
 
     /**
@@ -998,20 +1445,39 @@ describe('WaitingRoomService', () => {
         approvalRequired: true,
         maxPlayers: 1, // Room is full
         status: RoomStatus.WAITING,
-        host: { id: hostId, username: 'hostuser', createdAt: new Date(), updatedAt: new Date() } as User,
+        host: {
+          id: hostId,
+          username: 'hostuser',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as User,
         roomPlayers: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       } as Room;
-      const pendingRoomPlayer = { roomId, userId: pendingUserId, status: RoomPlayerStatus.PENDING } as RoomPlayer;
+      const pendingRoomPlayer = {
+        roomId,
+        userId: pendingUserId,
+        status: RoomPlayerStatus.PENDING,
+      } as RoomPlayer;
 
       jest.spyOn(service, 'findRoomById').mockResolvedValue(mockRoom);
       mockRoomPlayerRepository.findOne.mockResolvedValue(pendingRoomPlayer);
       mockRoomPlayerRepository.count.mockResolvedValue(1); // Simulate 1 active player, so room is full
 
-      await expect(service.approveOrDeclineJoinRequest(roomId, pendingUserId, JoinRequestDecision.APPROVE, hostId)).rejects.toThrow(BadRequestException);
+      await expect(
+        service.approveOrDeclineJoinRequest(
+          roomId,
+          pendingUserId,
+          JoinRequestDecision.APPROVE,
+          hostId,
+        ),
+      ).rejects.toThrow(BadRequestException);
       expect(pendingRoomPlayer.status).toBe(RoomPlayerStatus.PENDING); // Status should not change
-      expect(loggerService.warn).toHaveBeenCalledWith(`Cannot approve join request for user ${pendingUserId} in room ${roomId}: Room is full.`, 'WaitingRoomService');
+      expect(loggerService.warn).toHaveBeenCalledWith(
+        `Cannot approve join request for user ${pendingUserId} in room ${roomId}: Room is full.`,
+        'WaitingRoomService',
+      );
     });
   });
 
@@ -1026,12 +1492,24 @@ describe('WaitingRoomService', () => {
     it('should allow an active player to leave a room', async () => {
       const roomId = 'room-uuid';
       const userId = 'player-uuid';
-      const mockRoom = { id: roomId, hostId: 'another-host', createdAt: new Date(), updatedAt: new Date() } as Room;
-      const roomPlayer = { roomId, userId, status: RoomPlayerStatus.ACTIVE } as RoomPlayer;
+      const mockRoom = {
+        id: roomId,
+        hostId: 'another-host',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as Room;
+      const roomPlayer = {
+        roomId,
+        userId,
+        status: RoomPlayerStatus.ACTIVE,
+      } as RoomPlayer;
 
       jest.spyOn(service, 'findRoomById').mockResolvedValue(mockRoom);
       mockRoomPlayerRepository.findOne.mockResolvedValue(roomPlayer);
-      mockRoomPlayerRepository.save.mockResolvedValue({ ...roomPlayer, status: RoomPlayerStatus.LEFT });
+      mockRoomPlayerRepository.save.mockResolvedValue({
+        ...roomPlayer,
+        status: RoomPlayerStatus.LEFT,
+      });
 
       const result = await service.leaveRoom(roomId, userId);
       expect(result).toEqual(mockRoom);
@@ -1039,9 +1517,18 @@ describe('WaitingRoomService', () => {
       expect(mockRoomPlayerRepository.save).toHaveBeenCalledWith(roomPlayer);
       expect(waitingRoomGateway.emitRoomUpdate).toHaveBeenCalledWith(mockRoom);
       expect(cacheManager.del).toHaveBeenCalledWith(`room_${roomId}`); // Verify cache invalidation
-      expect(loggerService.log).toHaveBeenCalledWith(`User ${userId} attempting to leave room: ${roomId}`, 'WaitingRoomService');
-      expect(loggerService.log).toHaveBeenCalledWith(`User ${userId} successfully left room ${roomId}.`, 'WaitingRoomService');
-      expect(loggerService.log).toHaveBeenCalledWith(`Cache for room ${roomId} invalidated due to leave.`, 'WaitingRoomService');
+      expect(loggerService.log).toHaveBeenCalledWith(
+        `User ${userId} attempting to leave room: ${roomId}`,
+        'WaitingRoomService',
+      );
+      expect(loggerService.log).toHaveBeenCalledWith(
+        `User ${userId} successfully left room ${roomId}.`,
+        'WaitingRoomService',
+      );
+      expect(loggerService.log).toHaveBeenCalledWith(
+        `Cache for room ${roomId} invalidated due to leave.`,
+        'WaitingRoomService',
+      );
     });
 
     /**
@@ -1051,17 +1538,32 @@ describe('WaitingRoomService', () => {
     it('should allow a pending player to cancel their request', async () => {
       const roomId = 'room-uuid';
       const userId = 'player-uuid';
-      const mockRoom = { id: roomId, hostId: 'another-host', createdAt: new Date(), updatedAt: new Date() } as Room;
-      const roomPlayer = { roomId, userId, status: RoomPlayerStatus.PENDING } as RoomPlayer;
+      const mockRoom = {
+        id: roomId,
+        hostId: 'another-host',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as Room;
+      const roomPlayer = {
+        roomId,
+        userId,
+        status: RoomPlayerStatus.PENDING,
+      } as RoomPlayer;
 
       jest.spyOn(service, 'findRoomById').mockResolvedValue(mockRoom);
       mockRoomPlayerRepository.findOne.mockResolvedValue(roomPlayer);
-      mockRoomPlayerRepository.save.mockResolvedValue({ ...roomPlayer, status: RoomPlayerStatus.LEFT });
+      mockRoomPlayerRepository.save.mockResolvedValue({
+        ...roomPlayer,
+        status: RoomPlayerStatus.LEFT,
+      });
 
       await service.leaveRoom(roomId, userId);
       expect(roomPlayer.status).toBe(RoomPlayerStatus.LEFT); // Verify status update
       expect(mockRoomPlayerRepository.save).toHaveBeenCalledWith(roomPlayer);
-      expect(loggerService.log).toHaveBeenCalledWith(`User ${userId} successfully left room ${roomId}.`, 'WaitingRoomService');
+      expect(loggerService.log).toHaveBeenCalledWith(
+        `User ${userId} successfully left room ${roomId}.`,
+        'WaitingRoomService',
+      );
     });
 
     /**
@@ -1071,12 +1573,22 @@ describe('WaitingRoomService', () => {
     it('should throw BadRequestException if host tries to leave', async () => {
       const roomId = 'room-uuid';
       const hostId = 'host-uuid';
-      const mockRoom = { id: roomId, hostId: hostId, createdAt: new Date(), updatedAt: new Date() } as Room;
+      const mockRoom = {
+        id: roomId,
+        hostId: hostId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as Room;
 
       jest.spyOn(service, 'findRoomById').mockResolvedValue(mockRoom);
 
-      await expect(service.leaveRoom(roomId, hostId)).rejects.toThrow(BadRequestException);
-      expect(loggerService.warn).toHaveBeenCalledWith(`Host ${hostId} attempted to leave room ${roomId} using player leave endpoint.`, 'WaitingRoomService');
+      await expect(service.leaveRoom(roomId, hostId)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(loggerService.warn).toHaveBeenCalledWith(
+        `Host ${hostId} attempted to leave room ${roomId} using player leave endpoint.`,
+        'WaitingRoomService',
+      );
     });
 
     /**
@@ -1086,13 +1598,23 @@ describe('WaitingRoomService', () => {
     it('should throw BadRequestException if user is not associated with room', async () => {
       const roomId = 'room-uuid';
       const userId = 'non-associated-user';
-      const mockRoom = { id: roomId, hostId: 'host-id', createdAt: new Date(), updatedAt: new Date() } as Room;
+      const mockRoom = {
+        id: roomId,
+        hostId: 'host-id',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as Room;
 
       jest.spyOn(service, 'findRoomById').mockResolvedValue(mockRoom);
       mockRoomPlayerRepository.findOne.mockResolvedValue(null); // Simulate no association found
 
-      await expect(service.leaveRoom(roomId, userId)).rejects.toThrow(BadRequestException);
-      expect(loggerService.warn).toHaveBeenCalledWith(`User ${userId} is not associated with room ${roomId}.`, 'WaitingRoomService');
+      await expect(service.leaveRoom(roomId, userId)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(loggerService.warn).toHaveBeenCalledWith(
+        `User ${userId} is not associated with room ${roomId}.`,
+        'WaitingRoomService',
+      );
     });
 
     /**
@@ -1102,14 +1624,28 @@ describe('WaitingRoomService', () => {
     it('should throw BadRequestException if user has already left or declined', async () => {
       const roomId = 'room-uuid';
       const userId = 'player-uuid';
-      const mockRoom = { id: roomId, hostId: 'another-host', createdAt: new Date(), updatedAt: new Date() } as Room;
-      const roomPlayer = { roomId, userId, status: RoomPlayerStatus.LEFT } as RoomPlayer; // Already left
+      const mockRoom = {
+        id: roomId,
+        hostId: 'another-host',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as Room;
+      const roomPlayer = {
+        roomId,
+        userId,
+        status: RoomPlayerStatus.LEFT,
+      } as RoomPlayer; // Already left
 
       jest.spyOn(service, 'findRoomById').mockResolvedValue(mockRoom);
       mockRoomPlayerRepository.findOne.mockResolvedValue(roomPlayer);
 
-      await expect(service.leaveRoom(roomId, userId)).rejects.toThrow(BadRequestException);
-      expect(loggerService.warn).toHaveBeenCalledWith(`User ${userId} has already left or declined to join room ${roomId}.`, 'WaitingRoomService');
+      await expect(service.leaveRoom(roomId, userId)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(loggerService.warn).toHaveBeenCalledWith(
+        `User ${userId} has already left or declined to join room ${roomId}.`,
+        'WaitingRoomService',
+      );
     });
   });
 
@@ -1132,7 +1668,12 @@ describe('WaitingRoomService', () => {
         approvalRequired: false,
         maxPlayers: 10,
         status: RoomStatus.WAITING, // Room is waiting
-        host: { id: hostId, username: 'hostuser', createdAt: new Date(), updatedAt: new Date() } as User,
+        host: {
+          id: hostId,
+          username: 'hostuser',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as User,
         roomPlayers: [],
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -1140,17 +1681,24 @@ describe('WaitingRoomService', () => {
 
       jest.spyOn(service, 'findRoomById').mockResolvedValue(mockRoom);
       mockRoomPlayerRepository.count.mockResolvedValue(1); // At least one player
-      mockRoomRepository.save.mockResolvedValue({ ...mockRoom, status: RoomStatus.IN_PROGRESS });
+      mockRoomRepository.save.mockResolvedValue({
+        ...mockRoom,
+        status: RoomStatus.IN_PROGRESS,
+      });
       mockRoomPlayerRepository.update.mockResolvedValue({}); // Mock update for pending players
 
       const result = await service.startGame(roomId, hostId);
       expect(result.status).toBe(RoomStatus.IN_PROGRESS); // Verify room status
-      expect(mockRoomRepository.save).toHaveBeenCalledWith(expect.objectContaining({ status: RoomStatus.IN_PROGRESS }));
+      expect(mockRoomRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ status: RoomStatus.IN_PROGRESS }),
+      );
       expect(mockRoomPlayerRepository.update).toHaveBeenCalledWith(
         { roomId, status: RoomPlayerStatus.PENDING },
         { status: RoomPlayerStatus.DECLINED }, // Pending players should be declined
       );
-      expect(waitingRoomGateway.emitRoomUpdate).toHaveBeenCalledWith(expect.objectContaining({ status: RoomStatus.IN_PROGRESS }));
+      expect(waitingRoomGateway.emitRoomUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ status: RoomStatus.IN_PROGRESS }),
+      );
     });
 
     /**
@@ -1168,7 +1716,12 @@ describe('WaitingRoomService', () => {
         approvalRequired: false,
         maxPlayers: 10,
         status: RoomStatus.WAITING,
-        host: { id: 'original-host-uuid', username: 'originalhost', createdAt: new Date(), updatedAt: new Date() } as User,
+        host: {
+          id: 'original-host-uuid',
+          username: 'originalhost',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as User,
         roomPlayers: [],
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -1176,7 +1729,9 @@ describe('WaitingRoomService', () => {
 
       jest.spyOn(service, 'findRoomById').mockResolvedValue(mockRoom);
 
-      await expect(service.startGame(roomId, hostId)).rejects.toThrow(ForbiddenException);
+      await expect(service.startGame(roomId, hostId)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     /**
@@ -1194,7 +1749,12 @@ describe('WaitingRoomService', () => {
         approvalRequired: false,
         maxPlayers: 10,
         status: RoomStatus.IN_PROGRESS, // Not WAITING
-        host: { id: hostId, username: 'hostuser', createdAt: new Date(), updatedAt: new Date() } as User,
+        host: {
+          id: hostId,
+          username: 'hostuser',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as User,
         roomPlayers: [],
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -1202,7 +1762,9 @@ describe('WaitingRoomService', () => {
 
       jest.spyOn(service, 'findRoomById').mockResolvedValue(mockRoom);
 
-      await expect(service.startGame(roomId, hostId)).rejects.toThrow(BadRequestException);
+      await expect(service.startGame(roomId, hostId)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     /**
@@ -1220,7 +1782,12 @@ describe('WaitingRoomService', () => {
         approvalRequired: false,
         maxPlayers: 10,
         status: RoomStatus.WAITING,
-        host: { id: hostId, username: 'hostuser', createdAt: new Date(), updatedAt: new Date() } as User,
+        host: {
+          id: hostId,
+          username: 'hostuser',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as User,
         roomPlayers: [],
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -1229,8 +1796,13 @@ describe('WaitingRoomService', () => {
       jest.spyOn(service, 'findRoomById').mockResolvedValue(mockRoom);
       mockRoomPlayerRepository.count.mockResolvedValue(0); // No players
 
-      await expect(service.startGame(roomId, hostId)).rejects.toThrow(BadRequestException);
-      expect(loggerService.warn).toHaveBeenCalledWith(`Cannot start game in room ${roomId}: No active players.`, 'WaitingRoomService');
+      await expect(service.startGame(roomId, hostId)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(loggerService.warn).toHaveBeenCalledWith(
+        `Cannot start game in room ${roomId}: No active players.`,
+        'WaitingRoomService',
+      );
     });
 
     /**
@@ -1248,7 +1820,12 @@ describe('WaitingRoomService', () => {
         approvalRequired: false,
         maxPlayers: 10,
         status: RoomStatus.WAITING,
-        host: { id: hostId, username: 'hostuser', createdAt: new Date(), updatedAt: new Date() } as User,
+        host: {
+          id: hostId,
+          username: 'hostuser',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as User,
         roomPlayers: [],
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -1256,7 +1833,10 @@ describe('WaitingRoomService', () => {
 
       jest.spyOn(service, 'findRoomById').mockResolvedValue(mockRoom);
       mockRoomPlayerRepository.count.mockResolvedValue(1); // At least one active player
-      mockRoomRepository.save.mockResolvedValue({ ...mockRoom, status: RoomStatus.IN_PROGRESS });
+      mockRoomRepository.save.mockResolvedValue({
+        ...mockRoom,
+        status: RoomStatus.IN_PROGRESS,
+      });
       mockRoomPlayerRepository.update.mockResolvedValue({ affected: 1 }); // Simulate one pending request declined
 
       await service.startGame(roomId, hostId);
@@ -1264,7 +1844,10 @@ describe('WaitingRoomService', () => {
         { roomId, status: RoomPlayerStatus.PENDING },
         { status: RoomPlayerStatus.DECLINED },
       );
-      expect(loggerService.log).toHaveBeenCalledWith(`All pending join requests for room ${roomId} declined.`, 'WaitingRoomService');
+      expect(loggerService.log).toHaveBeenCalledWith(
+        `All pending join requests for room ${roomId} declined.`,
+        'WaitingRoomService',
+      );
     });
   });
 });

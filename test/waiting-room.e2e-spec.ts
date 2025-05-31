@@ -41,11 +41,13 @@ describe('WaitingRoom (e2e)', () => {
 
     app = moduleFixture.createNestApplication();
     // Apply global validation pipes to ensure DTO validation rules are enforced during E2E tests.
-    app.useGlobalPipes(new (require('@nestjs/common').ValidationPipe)({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    }));
+    app.useGlobalPipes(
+      new (require('@nestjs/common').ValidationPipe)({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+      }),
+    );
     await app.init(); // Initialize the NestJS application
 
     dataSource = app.get(DataSource); // Get the TypeORM DataSource instance
@@ -62,9 +64,14 @@ describe('WaitingRoom (e2e)', () => {
       .expect(200);
 
     accessToken = loginRes.body.access_token; // Store the access token
-    const user = await dataSource.getRepository(User).findOne({ where: { username: 'testuser_wr' } });
-    if (!user) { // Add null check and throw error if user not found
-      console.error('[E2E Setup] CRITICAL: User "testuser_wr" not found after login attempt.');
+    const user = await dataSource
+      .getRepository(User)
+      .findOne({ where: { username: 'testuser_wr' } });
+    if (!user) {
+      // Add null check and throw error if user not found
+      console.error(
+        '[E2E Setup] CRITICAL: User "testuser_wr" not found after login attempt.',
+      );
       throw new Error('Test user "testuser_wr" not found after login.');
     }
     userId = user.id; // Store the user ID
@@ -159,9 +166,13 @@ describe('WaitingRoom (e2e)', () => {
         .send({ username: 'playeruser_join', password: 'Password123!' })
         .expect(200);
       playerJoinAccessToken = playerLoginRes.body.access_token;
-      const playerUser = await dataSource.getRepository(User).findOne({ where: { username: 'playeruser_join' } });
+      const playerUser = await dataSource
+        .getRepository(User)
+        .findOne({ where: { username: 'playeruser_join' } });
       if (!playerUser) {
-        throw new Error('Player user for join/leave tests not found after registration.');
+        throw new Error(
+          'Player user for join/leave tests not found after registration.',
+        );
       }
       playerJoinUserId = playerUser.id;
     });
@@ -254,9 +265,14 @@ describe('WaitingRoom (e2e)', () => {
         .expect(200);
 
       hostAccessToken = loginRes.body.access_token;
-      const hostUser = await dataSource.getRepository(User).findOne({ where: { username: 'hostuser_wr' } });
-      if (!hostUser) { // Add null check
-        console.error('[E2E Setup] CRITICAL: User "hostuser_wr" not found after login attempt.');
+      const hostUser = await dataSource
+        .getRepository(User)
+        .findOne({ where: { username: 'hostuser_wr' } });
+      if (!hostUser) {
+        // Add null check
+        console.error(
+          '[E2E Setup] CRITICAL: User "hostuser_wr" not found after login attempt.',
+        );
         throw new Error('Test user "hostuser_wr" not found after login.');
       }
       hostUserId = hostUser.id;
@@ -314,7 +330,9 @@ describe('WaitingRoom (e2e)', () => {
         .expect(200); // Expect HTTP status 200 (OK)
 
       // Verify the room is no longer in the database by direct query.
-      const room = await dataSource.getRepository(Room).findOne({ where: { id: roomId } });
+      const room = await dataSource
+        .getRepository(Room)
+        .findOne({ where: { id: roomId } });
       expect(room).toBeNull();
     });
 
@@ -336,7 +354,9 @@ describe('WaitingRoom (e2e)', () => {
         .send({ username: 'playeruser_wr', password: 'Password123!' })
         .expect(200);
       const playerAccessToken = playerLoginRes.body.access_token;
-      const playerUser = await dataSource.getRepository(User).findOne({ where: { username: 'playeruser_wr' } });
+      const playerUser = await dataSource
+        .getRepository(User)
+        .findOne({ where: { username: 'playeruser_wr' } });
       if (!playerUser) {
         throw new Error('Player user not found after registration.');
       }
@@ -386,7 +406,9 @@ describe('WaitingRoom (e2e)', () => {
         .send({ username: 'player2user_wr', password: 'Password123!' })
         .expect(200);
       const playerAccessToken = playerLoginRes.body.access_token;
-      const playerUser = await dataSource.getRepository(User).findOne({ where: { username: 'player2user_wr' } });
+      const playerUser = await dataSource
+        .getRepository(User)
+        .findOne({ where: { username: 'player2user_wr' } });
       if (!playerUser) {
         throw new Error('Player 2 user not found after registration.');
       }
@@ -400,10 +422,12 @@ describe('WaitingRoom (e2e)', () => {
         .expect(200);
 
       // Manually update player status to ACTIVE to simulate host approval for game start.
-      await dataSource.getRepository(RoomPlayer).update(
-        { room: { id: roomId }, player: { id: playerUserId } },
-        { status: RoomPlayerStatus.ACTIVE }
-      );
+      await dataSource
+        .getRepository(RoomPlayer)
+        .update(
+          { room: { id: roomId }, player: { id: playerUserId } },
+          { status: RoomPlayerStatus.ACTIVE },
+        );
 
       // Host starts the game.
       const startGameDto = {}; // Empty DTO for starting game
@@ -415,7 +439,9 @@ describe('WaitingRoom (e2e)', () => {
 
       expect(response.body.status).toBe(RoomStatus.IN_PROGRESS); // Verify room status in response
       // Verify the room status is IN_PROGRESS in the database directly.
-      const room = await dataSource.getRepository(Room).findOne({ where: { id: roomId } });
+      const room = await dataSource
+        .getRepository(Room)
+        .findOne({ where: { id: roomId } });
       expect(room?.status).toBe(RoomStatus.IN_PROGRESS);
     });
   });

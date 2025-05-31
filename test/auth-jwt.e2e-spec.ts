@@ -15,19 +15,23 @@ describe('Auth JWT (e2e)', () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
         AppModule,
-        ThrottlerModule.forRoot([{
-          ttl: 60000, // 1 minute
-          limit: 50, // Increased limit for testing purposes
-        }]),
+        ThrottlerModule.forRoot([
+          {
+            ttl: 60000, // 1 minute
+            limit: 50, // Increased limit for testing purposes
+          },
+        ]),
       ],
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(new (require('@nestjs/common').ValidationPipe)({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    }));
+    app.useGlobalPipes(
+      new (require('@nestjs/common').ValidationPipe)({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+      }),
+    );
     await app.init();
   });
 
@@ -90,14 +94,16 @@ describe('Auth JWT (e2e)', () => {
         .send({ refreshToken: 'invalid-refresh-token' })
         .expect(401)
         .expect((res) => {
-          expect(res.body.message).toContain('Invalid or expired refresh token');
+          expect(res.body.message).toContain(
+            'Invalid or expired refresh token',
+          );
         });
     });
 
     it('should return 401 Unauthorized if refresh token is reused after successful refresh', async () => {
       // Register a new user for this specific test
       const reusedTokenUsername = 'reused_token_user';
-      
+
       await request(app.getHttpServer())
         .post('/auth/register')
         .send({ username: reusedTokenUsername, password })
@@ -122,7 +128,9 @@ describe('Auth JWT (e2e)', () => {
         .send({ refreshToken: initialRefreshToken })
         .expect(401)
         .expect((res) => {
-          expect(res.body.message).toContain('Invalid or expired refresh token');
+          expect(res.body.message).toContain(
+            'Invalid or expired refresh token',
+          );
         });
     });
   });
@@ -177,9 +185,7 @@ describe('Auth JWT (e2e)', () => {
     });
 
     it('should return 401 Unauthorized if no token is provided for logout', () => {
-      return request(app.getHttpServer())
-        .post('/auth/logout')
-        .expect(401);
+      return request(app.getHttpServer()).post('/auth/logout').expect(401);
     });
 
     it('should return 401 Unauthorized if an invalid token is provided for logout', () => {

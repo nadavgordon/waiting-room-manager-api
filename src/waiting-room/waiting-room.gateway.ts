@@ -1,5 +1,19 @@
-import { WebSocketGateway, SubscribeMessage, MessageBody, WebSocketServer, ConnectedSocket, OnGatewayConnection, OnGatewayDisconnect } from '@nestjs/websockets';
-import { Logger, UseGuards, UsePipes, ValidationPipe, UnauthorizedException } from '@nestjs/common';
+import {
+  WebSocketGateway,
+  SubscribeMessage,
+  MessageBody,
+  WebSocketServer,
+  ConnectedSocket,
+  OnGatewayConnection,
+  OnGatewayDisconnect,
+} from '@nestjs/websockets';
+import {
+  Logger,
+  UseGuards,
+  UsePipes,
+  ValidationPipe,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { Room } from './entities/room.entity';
 import { JwtService } from '@nestjs/jwt';
@@ -16,7 +30,9 @@ import { LeaveRoomDto } from './dto/leave-room.dto';
     credentials: true,
   },
 })
-export class WaitingRoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class WaitingRoomGateway
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer() server: Server;
   private readonly logger = new Logger(WaitingRoomGateway.name);
 
@@ -42,9 +58,13 @@ export class WaitingRoomGateway implements OnGatewayConnection, OnGatewayDisconn
         throw new UnauthorizedException('User not found.');
       }
       client.data.user = user;
-      this.logger.log(`Client connected: ${client.id} (User: ${user.username})`);
+      this.logger.log(
+        `Client connected: ${client.id} (User: ${user.username})`,
+      );
     } catch (error) {
-      this.logger.error(`Client connection failed: ${client.id} - ${error.message}`);
+      this.logger.error(
+        `Client connection failed: ${client.id} - ${error.message}`,
+      );
       client.disconnect(true);
     }
   }
@@ -89,9 +109,14 @@ export class WaitingRoomGateway implements OnGatewayConnection, OnGatewayDisconn
   @UseGuards(WsAuthGuard)
   @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   @SubscribeMessage('joinRoomUpdates')
-  handleJoinRoomUpdates(@MessageBody() joinRoomDto: JoinRoomDto, @ConnectedSocket() client: Socket) {
+  handleJoinRoomUpdates(
+    @MessageBody() joinRoomDto: JoinRoomDto,
+    @ConnectedSocket() client: Socket,
+  ) {
     client.join(joinRoomDto.roomId);
-    this.logger.log(`Client ${client.id} (User: ${client.data.user.username}) joined room updates for room: ${joinRoomDto.roomId}`);
+    this.logger.log(
+      `Client ${client.id} (User: ${client.data.user.username}) joined room updates for room: ${joinRoomDto.roomId}`,
+    );
   }
 
   /**
@@ -104,8 +129,13 @@ export class WaitingRoomGateway implements OnGatewayConnection, OnGatewayDisconn
   @UseGuards(WsAuthGuard)
   @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   @SubscribeMessage('leaveRoomUpdates')
-  handleLeaveRoomUpdates(@MessageBody() leaveRoomDto: LeaveRoomDto, @ConnectedSocket() client: Socket) {
+  handleLeaveRoomUpdates(
+    @MessageBody() leaveRoomDto: LeaveRoomDto,
+    @ConnectedSocket() client: Socket,
+  ) {
     client.leave(leaveRoomDto.roomId);
-    this.logger.log(`Client ${client.id} (User: ${client.data.user.username}) left room updates for room: ${leaveRoomDto.roomId}`);
+    this.logger.log(
+      `Client ${client.id} (User: ${client.data.user.username}) left room updates for room: ${leaveRoomDto.roomId}`,
+    );
   }
 }

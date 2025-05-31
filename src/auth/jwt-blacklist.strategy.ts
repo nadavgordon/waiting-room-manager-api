@@ -13,7 +13,10 @@ import { LoggerService } from '../common/logger/logger.service';
  * This strategy extends the standard JWT strategy to add token revocation support.
  */
 @Injectable()
-export class JwtBlacklistStrategy extends PassportStrategy(Strategy, 'jwt-blacklist') {
+export class JwtBlacklistStrategy extends PassportStrategy(
+  Strategy,
+  'jwt-blacklist',
+) {
   constructor(
     private configService: ConfigService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
@@ -22,7 +25,9 @@ export class JwtBlacklistStrategy extends PassportStrategy(Strategy, 'jwt-blackl
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: configService.get<string>('JWT_SECRET') || 'fallback_secret_for_dev_only',
+      secretOrKey:
+        configService.get<string>('JWT_SECRET') ||
+        'fallback_secret_for_dev_only',
       passReqToCallback: true, // Pass the request to the validate method
     });
   }
@@ -37,14 +42,17 @@ export class JwtBlacklistStrategy extends PassportStrategy(Strategy, 'jwt-blackl
   async validate(request: any, payload: any) {
     // Extract the token from the Authorization header
     const token = request.headers.authorization.split(' ')[1];
-    
+
     // Check if the token is blacklisted
     const isBlacklisted = await this.cacheManager.get(`blacklist:${token}`);
     if (isBlacklisted) {
-      this.logger.warn(`Token is blacklisted: ${token.substring(0, 10)}...`, 'JwtBlacklistStrategy');
+      this.logger.warn(
+        `Token is blacklisted: ${token.substring(0, 10)}...`,
+        'JwtBlacklistStrategy',
+      );
       throw new UnauthorizedException('Token has been revoked');
     }
-    
+
     return { userId: payload.sub, username: payload.username };
   }
 }

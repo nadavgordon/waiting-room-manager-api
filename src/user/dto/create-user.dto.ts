@@ -19,7 +19,8 @@ export class CreateUserDto {
   username: string;
 
   @ApiProperty({
-    description: 'The password for the new user. Must be 8-12 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.',
+    description:
+      'The password for the new user. Must be 8-12 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.',
     minLength: 8,
     maxLength: 12,
     example: 'Password123!',
@@ -32,8 +33,12 @@ export class CreateUserDto {
   // - At least one digit (`(?=.*\d)`)
   // - At least one special character (`(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?])`)
   // - Total length between 8 and 12 characters (`.{8,12}$`)
-  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?]).{8,12}$/, {
-    message: 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character, and be between 8 and 12 characters long',
-  })
+  @Matches(
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?]).{8,12}$/,
+    {
+      message:
+        'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character, and be between 8 and 12 characters long',
+    },
+  )
   password: string;
 }
