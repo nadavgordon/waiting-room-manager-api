@@ -41,6 +41,11 @@ spec:
                 secretKeyRef:
                   name: api-secret
                   key: POSTGRES_DB
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis-secret
+                  key: REDIS_PASSWORD
           resources:
             requests:
               cpu: "100m"

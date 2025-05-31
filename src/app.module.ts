@@ -53,7 +53,13 @@ import { APP_GUARD } from '@nestjs/core';
         store: redisStore,
         host: configService.get<string>('REDIS_HOST') || 'localhost',
         port: configService.get<number>('REDIS_PORT') || 6379,
-        password: configService.get<string>('REDIS_PASSWORD') || undefined,
+        password: (() => {
+          const redisPassword = configService.get<string>('REDIS_PASSWORD');
+          if (process.env.NODE_ENV === 'production' && !redisPassword) {
+            throw new Error('REDIS_PASSWORD must be set in production environment.');
+          }
+          return redisPassword || undefined;
+        })(),
         ttl: (configService.get<number>('REDIS_TTL') || 3600) * 1000, // Cache TTL in milliseconds, configurable via environment.
       }),
       inject: [ConfigService],
