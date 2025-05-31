@@ -21,11 +21,56 @@ export class LoggerService implements NestLoggerService {
       format: format.combine(
         format.timestamp(), // Adds a timestamp to each log entry.
         format.json(), // Ensures logs are in JSON format for structured logging.
+        format((info) => {
+          // Mask PII and sanitize messages before logging
+          info.message = this.sanitizeLogMessage(this.maskPII(info.message as string));
+          if (info.context) {
+            info.context = this.sanitizeLogMessage(this.maskPII(info.context as string));
+          }
+          if (info.trace) {
+            info.trace = this.sanitizeLogMessage(this.maskPII(info.trace as string));
+          }
+          return info;
+        })(),
       ),
       transports: [
         new transports.Console(), // Outputs logs to the console.
       ],
     });
+  }
+
+  /**
+   * Masks Personally Identifiable Information (PII) from a string.
+   * Specifically targets 'username' and 'userId' patterns.
+   * @param message The string to mask.
+   * @returns The masked string.
+   */
+  private maskPII(message: string): string {
+    let maskedMessage = message;
+    // Mask username
+    maskedMessage = maskedMessage.replace(/(["']?username["']?\s*:\s*["'])([^"']+)(["'])/gi, '$1[MASKED_USERNAME]$3');
+    // Mask userId (assuming it's a UUID or similar string)
+    maskedMessage = maskedMessage.replace(/(["']?userId["']?:\s*["'])([a-f0-9-]+)(["'])/gi, '$1[MASKED_USERID]$3');
+    return maskedMessage;
+  }
+
+  /**
+   * Sanitizes a log message to prevent log injection attacks.
+   * Escapes newline characters and other potentially harmful characters.
+   * @param message The string to sanitize.
+   * @returns The sanitized string.
+   */
+  private sanitizeLogMessage(message: string): string {
+    if (typeof message !== 'string') {
+      return message;
+    }
+    // Replace newline characters to prevent log injection
+    let sanitizedMessage = message.replace(/(\r\n|\n|\r)/gm, '\\n');
+    // Escape other potentially harmful characters if necessary (e.g., null bytes, control characters)
+    // For simplicity, focusing on newlines as the primary injection vector for logs.
+    // More comprehensive sanitization might involve encoding or removing non-printable ASCII.
+    sanitizedMessage = sanitizedMessage.replace(/\0/g, '\\0'); // Replace null bytes
+    return sanitizedMessage;
   }
 
   /**
