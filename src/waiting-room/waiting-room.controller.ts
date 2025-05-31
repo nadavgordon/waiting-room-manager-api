@@ -8,6 +8,8 @@ import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiParam, ApiBody, ApiBea
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { GetUser } from '../auth/get-user.decorator';
 import { PaginationDto, PaginatedResponseDto } from '../common/dto/pagination.dto';
+import { ThrottlerBehindProxyGuard } from '../common/guards/throttler-behind-proxy.guard';
+import { Throttle } from '@nestjs/throttler';
 
 @ApiTags('WaitingRoom')
 @ApiExtraModels(PaginatedResponseDto, Room) // Registers DTOs for Swagger schema generation.
@@ -21,7 +23,8 @@ export class WaitingRoomController {
    * The host of the room is automatically set to the authenticated user.
    */
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, ThrottlerBehindProxyGuard)
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 requests per minute for creating rooms
   @ApiBearerAuth('access-token')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a new waiting room' })
@@ -135,7 +138,8 @@ export class WaitingRoomController {
    * Otherwise, the user will directly become an `ACTIVE` player.
    */
   @Post(':roomId/join')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, ThrottlerBehindProxyGuard)
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 requests per minute for joining rooms
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Join a specific waiting room' })
   @ApiParam({ name: 'roomId', description: 'The ID of the room to join', type: 'string', format: 'uuid', example: 'a1b2c3d4-e5f6-7890-1234-567890abcdef' })

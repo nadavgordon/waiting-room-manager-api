@@ -12,6 +12,8 @@ import { RoomPlayer } from './waiting-room/entities/room-player.entity';
 import { Room } from './waiting-room/entities/room.entity';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from './common/logger/logger.module';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -57,8 +59,23 @@ import { LoggerModule } from './common/logger/logger.module';
       inject: [ConfigService],
       isGlobal: true,
     }),
+    // ThrottlerModule: Configures rate limiting for the application.
+    // `ttl` defines the time window (in milliseconds) and `limit` defines the maximum requests within that window.
+    // `isGlobal: true` makes the ThrottlerGuard available application-wide.
+    ThrottlerModule.forRoot([{
+      ttl: 60000, // 1 minute
+      limit: 10, // 10 requests per minute
+    }]),
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    // APP_GUARD: Applies the ThrottlerGuard globally to all routes.
+    // This ensures that all incoming requests are subject to the defined rate limits.
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}

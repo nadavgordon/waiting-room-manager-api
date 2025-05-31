@@ -4,6 +4,8 @@ import { CreateUserDto } from '../user/dto/create-user.dto';
 import { LoginUserDto } from '../user/dto/login-user.dto';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { ThrottlerBehindProxyGuard } from '../common/guards/throttler-behind-proxy.guard';
+import { SkipThrottle, Throttle } from '@nestjs/throttler';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -16,6 +18,8 @@ export class AuthController {
    * The password policy is enforced via `CreateUserDto` validation.
    */
   @Post('register')
+  @UseGuards(ThrottlerBehindProxyGuard)
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 requests per minute for registration
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Register a new user account' })
   @ApiResponse({
@@ -37,6 +41,8 @@ export class AuthController {
    * which clients can use for subsequent authenticated requests.
    */
   @Post('login')
+  @UseGuards(ThrottlerBehindProxyGuard)
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 requests per minute for login
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Authenticate user and receive JWT access token' })
   @ApiResponse({
