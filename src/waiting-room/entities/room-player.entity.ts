@@ -57,7 +57,7 @@ export class RoomPlayer {
     type: () => User,
     description: 'The user object representing the player',
   })
-  @ManyToOne(() => User, (user) => user.roomPlayers)
+  @ManyToOne(() => User, (user) => user.roomPlayers, { onDelete: 'CASCADE' }) // Cascade delete RoomPlayer if User is deleted
   @JoinColumn({ name: 'userId' })
   player: User;
 }

@@ -98,7 +98,7 @@ export class Room {
   hostId: string; // Foreign key for the host user
 
   @ApiProperty({ type: () => User, description: 'The host user object' })
-  @ManyToOne(() => User, (user) => user.hostedRooms)
+  @ManyToOne(() => User, (user) => user.hostedRooms, { onDelete: 'CASCADE' }) // Cascade delete Room if host User is deleted
   @JoinColumn({ name: 'hostId' })
   host: User;
 
