@@ -6,6 +6,7 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { HttpAdapterHost } from '@nestjs/core';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { LoggerService } from './common/logger/logger.service';
+import helmet from 'helmet';
 
 async function bootstrap() {
   // Initialize the NestJS application.
@@ -45,6 +46,47 @@ async function bootstrap() {
     origin: corsOrigins,
     credentials: true,
   });
+
+  // Apply Helmet middleware for enhanced application security by setting various HTTP headers.
+  // This helps protect against common web vulnerabilities like XSS, clickjacking, and others.
+  app.use(helmet());
+
+  // Configure Content Security Policy (CSP) to mitigate cross-site scripting (XSS) attacks
+  // and other content injection vulnerabilities. This policy defines approved sources of content.
+  app.use(
+    helmet.contentSecurityPolicy({
+      directives: {
+        defaultSrc: ["'self'"], // Only allow resources from the same origin by default.
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Allow self, inline scripts, and eval for development/Swagger.
+        styleSrc: ["'self'", "'unsafe-inline'"], // Allow self and inline styles.
+        imgSrc: ["'self'", 'data:'], // Allow images from self and data URIs.
+        fontSrc: ["'self'"], // Allow fonts from self.
+        connectSrc: ["'self'", 'https://ka-f.fontawesome.com'], // Allow connections to self and FontAwesome CDN.
+        objectSrc: ["'none'"], // Disallow <object>, <embed>, and <applet> elements.
+        mediaSrc: ["'self'"], // Allow media from self.
+        frameSrc: ["'none'"], // Disallow embedding the application in iframes.
+      },
+    }),
+  );
+
+  // Add X-Content-Type-Options header to prevent MIME sniffing.
+  // This ensures that browsers interpret content types as declared, reducing exposure to drive-by downloads.
+  app.use(helmet.noSniff());
+
+  // Add X-Frame-Options header to prevent clickjacking attacks.
+  // 'DENY' prevents the page from being rendered in a frame.
+  app.use(helmet.frameguard({ action: 'deny' }));
+
+  // Add Strict-Transport-Security (HSTS) header to enforce secure (HTTPS) connections.
+  // 'max-age' specifies the duration in seconds that the browser should remember to
+  // only access the site using HTTPS. 'includeSubDomains' applies the policy to subdomains.
+  app.use(
+    helmet.hsts({
+      maxAge: 31536000, // 1 year in seconds.
+      includeSubDomains: true,
+      preload: true, // Opt-in to browser HSTS preload list.
+    }),
+  );
 
   // Enable global validation pipe for automatic DTO validation.
   // This pipe leverages `class-validator` and `class-transformer` to ensure incoming request
