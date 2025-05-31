@@ -4,6 +4,7 @@ import { CreateUserDto } from '../user/dto/create-user.dto';
 import { LoginUserDto } from '../user/dto/login-user.dto';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { JwtBlacklistGuard } from './jwt-blacklist.guard';
 import { ThrottlerBehindProxyGuard } from '../common/guards/throttler-behind-proxy.guard';
 import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
@@ -86,7 +87,7 @@ export class AuthController {
    * preventing its further use even if it hasn't naturally expired.
    */
   @Post('logout')
-  @UseGuards(JwtAuthGuard) // Requires a valid access token to logout
+  @UseGuards(JwtBlacklistGuard) // Requires a valid and non-revoked access token to logout
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Logout user and revoke JWT access token' })

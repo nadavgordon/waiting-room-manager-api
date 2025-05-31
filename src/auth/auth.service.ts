@@ -5,7 +5,7 @@ import * as bcrypt from 'bcrypt';
 import { LoggerService } from '../common/logger/logger.service';
 import { ConfigService } from '@nestjs/config';
 import { User } from '../user/entities/user.entity';
-import { Repository } from 'typeorm';
+import { Repository, Not, IsNull } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { v4 as uuidv4 } from 'uuid';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
@@ -58,7 +58,11 @@ export class AuthService {
    */
   async login(user: any) {
     this.logger.log(`User login initiated for: ${user.username}`, 'AuthService');
-    const payload = { username: user.username, sub: user.id };
+    const payload = {
+      username: user.username,
+      sub: user.id,
+      nonce: Date.now() // Add a timestamp to ensure each token is unique
+    };
     const accessToken = this.jwtService.sign(payload);
 
     const refreshToken = uuidv4();
@@ -88,7 +92,14 @@ export class AuthService {
   async refreshTokens(refreshToken: string) {
     this.logger.log('Attempting to refresh tokens', 'AuthService');
 
-    const users = await this.usersRepository.find();
+    // Find all users with a non-null refreshTokenHash
+    const users = await this.usersRepository.find({
+      where: [
+        { refreshTokenHash: Not(IsNull()) }
+      ]
+    });
+    
+    // Find the user with the matching refresh token
     const user = users.find(u => u.refreshTokenHash && bcrypt.compareSync(refreshToken, u.refreshTokenHash));
 
     if (!user || !user.refreshTokenExpiresAt || user.refreshTokenExpiresAt < new Date()) {
@@ -103,7 +114,11 @@ export class AuthService {
     });
 
     // Generate new access and refresh tokens
-    const payload = { username: user.username, sub: user.id };
+    const payload = {
+      username: user.username,
+      sub: user.id,
+      nonce: Date.now() // Add a timestamp to ensure each token is unique
+    };
     const newAccessToken = this.jwtService.sign(payload);
     const newRefreshToken = uuidv4();
     const newRefreshTokenHash = await bcrypt.hash(newRefreshToken, 10);

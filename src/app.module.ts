@@ -14,6 +14,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from './common/logger/logger.module';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
+import { TestLoggingModule } from './test-logging/test-logging.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { APP_GUARD } from '@nestjs/core';
     UserModule, // Handles user data management.
     AuthModule, // Provides authentication and authorization services (JWT, Passport.js).
     LoggerModule, // Integrates a custom structured logging solution (Winston).
+    TestLoggingModule, // Provides endpoints for testing logging security features.
     // CacheModule.registerAsync: Configures Redis as the application's caching layer.
     // `isGlobal: true` makes the cache manager accessible application-wide.
     CacheModule.registerAsync({

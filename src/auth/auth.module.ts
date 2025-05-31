@@ -5,6 +5,8 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
+import { JwtBlacklistStrategy } from './jwt-blacklist.strategy';
+import { JwtBlacklistGuard } from './jwt-blacklist.guard';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from '../common/logger/logger.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -28,8 +30,13 @@ import { User } from '../user/entities/user.entity';
     LoggerModule, // Provides structured logging capabilities for authentication events.
     TypeOrmModule.forFeature([User]),
   ],
-  providers: [AuthService, JwtStrategy], // `AuthService` handles core auth logic; `JwtStrategy` defines JWT validation.
+  providers: [
+    AuthService,
+    JwtStrategy,
+    JwtBlacklistStrategy,
+    JwtBlacklistGuard
+  ], // Core auth providers including strategies and guards
   controllers: [AuthController], // `AuthController` exposes authentication API endpoints.
-  exports: [AuthService], // `AuthService` is exported to be used by other modules (e.g., by `JwtAuthGuard`).
+  exports: [AuthService, JwtBlacklistGuard], // Export services and guards for use in other modules
 })
 export class AuthModule {}

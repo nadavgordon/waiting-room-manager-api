@@ -11,13 +11,14 @@ export default async () => {
   // Override DB connection for Kind cluster testing BEFORE importing AppDataSource.
   // These environment variables are crucial for connecting to the PostgreSQL database
   // used during E2E tests.
+  // The `DB_` prefixed variables are used by the application's TypeORM configuration
+  // to connect to the database. They should match the `POSTGRES_` prefixed variables
+  // that configure the PostgreSQL container itself (e.g., via Kubernetes secrets).
   process.env.DB_HOST = 'localhost';
   process.env.DB_PORT = '5432';
-  // Ensure these match your Kind cluster's PostgreSQL secret values.
-  // In a real CI/CD environment, these would be securely managed.
-  process.env.DB_USERNAME = 'postgres';
-  process.env.DB_PASSWORD = 'your_db_password'; // Placeholder: Replace with actual test DB password
-  process.env.DB_DATABASE = 'your_db_database'; // Placeholder: Replace with actual test DB name
+  process.env.DB_USERNAME = 'testuser'; // Matches POSTGRES_USER in .env.example
+  process.env.DB_PASSWORD = 'testpassword'; // Matches POSTGRES_PASSWORD in .env.example
+  process.env.DB_DATABASE = 'waiting_room_db'; // Matches POSTGRES_DB in .env.example
 
   // Load .env after setting explicit overrides. This allows .env to potentially override
   // if desired, but the explicit settings above take precedence for Kind cluster testing.

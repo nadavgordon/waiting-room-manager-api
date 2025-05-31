@@ -17,7 +17,7 @@ export class User {
   passwordHash: string; // Stores the securely hashed password.
 
   @ApiProperty({ description: 'Stores the refresh token hash for the user', example: 'hashed-refresh-token-string' })
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true }) // Explicitly define type as varchar
   refreshTokenHash: string | null;
 
   @ApiProperty({ description: 'Timestamp when the refresh token expires', example: '2024-01-01T12:00:00Z' })
@@ -40,5 +40,5 @@ export class User {
   // Establishes a one-to-many relationship: one user can be a player in multiple rooms.
   // This relationship is managed through the `RoomPlayer` entity, which links users to specific rooms.
   @OneToMany(() => RoomPlayer, roomPlayer => roomPlayer.player)
-  roomPlayers: RoomPlayer[];
+  roomPlayers: Room[];
 }
