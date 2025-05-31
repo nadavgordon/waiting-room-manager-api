@@ -1,6 +1,12 @@
-import { WebSocketGateway, SubscribeMessage, MessageBody, WebSocketServer, ConnectedSocket } from '@nestjs/websockets';
+import { WebSocketGateway, SubscribeMessage, MessageBody, WebSocketServer, ConnectedSocket, OnGatewayConnection, OnGatewayDisconnect } from '@nestjs/websockets';
+import { Logger, UseGuards, UsePipes, ValidationPipe, UnauthorizedException } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { Room } from './entities/room.entity';
+import { JwtService } from '@nestjs/jwt';
+import { UserService } from '../user/user.service';
+import { WsAuthGuard } from '../auth/ws-auth.guard';
+import { JoinRoomDto } from './dto/join-room.dto';
+import { LeaveRoomDto } from './dto/leave-room.dto';
 
 @WebSocketGateway({
   // Configures CORS for WebSocket connections, allowing specified origins to connect.
@@ -10,17 +16,37 @@ import { Room } from './entities/room.entity';
     credentials: true,
   },
 })
-export class WaitingRoomGateway {
-  // Injects the Socket.IO server instance, enabling the gateway to emit events to connected clients.
+export class WaitingRoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer() server: Server;
+  private readonly logger = new Logger(WaitingRoomGateway.name);
+
+  constructor(
+    private jwtService: JwtService,
+    private userService: UserService,
+  ) {}
 
   /**
    * Handles new client connections.
    * This method is invoked when a new WebSocket connection is established.
    * It can be used for initial setup or logging of new clients.
    */
-  handleConnection(client: Socket, ...args: any[]) {
-    console.log(`Client connected: ${client.id}`);
+  async handleConnection(client: Socket, ...args: any[]) {
+    try {
+      const authToken = client.handshake.headers.authorization?.split(' ')[1];
+      if (!authToken) {
+        throw new UnauthorizedException('No authorization token provided.');
+      }
+      const payload = this.jwtService.verify(authToken);
+      const user = await this.userService.findOne(payload.sub);
+      if (!user) {
+        throw new UnauthorizedException('User not found.');
+      }
+      client.data.user = user;
+      this.logger.log(`Client connected: ${client.id} (User: ${user.username})`);
+    } catch (error) {
+      this.logger.error(`Client connection failed: ${client.id} - ${error.message}`);
+      client.disconnect(true);
+    }
   }
 
   /**
@@ -29,7 +55,7 @@ export class WaitingRoomGateway {
    * It can be used for cleanup or logging of disconnections.
    */
   handleDisconnect(client: Socket) {
-    console.log(`Client disconnected: ${client.id}`);
+    this.logger.log(`Client disconnected: ${client.id}`);
   }
 
   /**
@@ -60,10 +86,12 @@ export class WaitingRoomGateway {
    * @param roomId The ID of the room the client wishes to receive updates for.
    * @param client The Socket.IO client requesting to join the update stream.
    */
+  @UseGuards(WsAuthGuard)
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   @SubscribeMessage('joinRoomUpdates')
-  handleJoinRoomUpdates(@MessageBody() roomId: string, @ConnectedSocket() client: Socket) {
-    client.join(roomId);
-    console.log(`Client ${client.id} joined room updates for room: ${roomId}`);
+  handleJoinRoomUpdates(@MessageBody() joinRoomDto: JoinRoomDto, @ConnectedSocket() client: Socket) {
+    client.join(joinRoomDto.roomId);
+    this.logger.log(`Client ${client.id} (User: ${client.data.user.username}) joined room updates for room: ${joinRoomDto.roomId}`);
   }
 
   /**
@@ -73,9 +101,11 @@ export class WaitingRoomGateway {
    * @param roomId The ID of the room the client wishes to stop receiving updates from.
    * @param client The Socket.IO client requesting to leave the update stream.
    */
+  @UseGuards(WsAuthGuard)
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   @SubscribeMessage('leaveRoomUpdates')
-  handleLeaveRoomUpdates(@MessageBody() roomId: string, @ConnectedSocket() client: Socket) {
-    client.leave(roomId);
-    console.log(`Client ${client.id} left room updates for room: ${roomId}`);
+  handleLeaveRoomUpdates(@MessageBody() leaveRoomDto: LeaveRoomDto, @ConnectedSocket() client: Socket) {
+    client.leave(leaveRoomDto.roomId);
+    this.logger.log(`Client ${client.id} (User: ${client.data.user.username}) left room updates for room: ${leaveRoomDto.roomId}`);
   }
 }

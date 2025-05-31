@@ -7,6 +7,8 @@ import { WaitingRoomService } from './waiting-room.service';
 import { WaitingRoomController } from './waiting-room.controller';
 import { WaitingRoomGateway } from './waiting-room.gateway';
 import { LoggerModule } from '../common/logger/logger.module';
+import { JwtModule } from '@nestjs/jwt';
+import { UserModule } from '../user/user.module';
 
 @Module({
   imports: [
@@ -14,6 +16,8 @@ import { LoggerModule } from '../common/logger/logger.module';
     // This makes their respective repositories available for dependency injection within `WaitingRoomModule`.
     TypeOrmModule.forFeature([Room, RoomPlayer, User]),
     LoggerModule, // Integrates the custom logging service for all waiting room related operations.
+    JwtModule.register({}), // Register JwtModule to make JwtService available
+    UserModule, // Import UserModule to make UserService available
   ],
   controllers: [WaitingRoomController], // `WaitingRoomController` handles HTTP API requests related to rooms.
   providers: [WaitingRoomService, WaitingRoomGateway], // `WaitingRoomService` contains core business logic; `WaitingRoomGateway` manages WebSocket communication.
