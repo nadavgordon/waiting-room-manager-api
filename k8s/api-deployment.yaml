@@ -17,6 +17,7 @@ spec:
       containers:
         - name: waiting-room-api
           image: waiting-room-api:local
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
           envFrom:

@@ -166,54 +166,6 @@ npm run build
 npm run start:prod
 ```
 
-### Running with Docker
-This section outlines how to run the application using Docker.
-
-#### Docker Image (Single Container)
-1.  **Build the Docker image:**
-    ```bash
-    docker build -t waiting-room-api .
-    ```
-2.  **Run the Docker container:**
-    ```bash
-    docker run -p 3000:3000 --env-file ./.env waiting-room-api
-    ```
-    The `--env-file ./.env` flag passes your local `.env` variables into the container.
-
-#### Docker Compose Setup (Multi-service Environment)
-For local development with all services (API, PostgreSQL, Redis) running in Docker containers, use Docker Compose.
-
-1.  **Ensure `.env` file is configured:**
-    Make sure you have a `.env` file at the project root with all necessary environment variables as specified in `.env.example`.
-
-2.  **Start the environment:**
-    This command builds the `api` service image (if not already built) and starts all defined services in detached mode.
-    ```bash
-    docker-compose up -d
-    ```
-
-3.  **Stop the environment:**
-    This command stops and removes all containers, networks, and volumes created by `docker-compose up`.
-    ```bash
-    docker-compose down
-    ```
-
-4.  **View logs for a specific service (e.g., `api`):**
-    ```bash
-    docker-compose logs -f api
-    ```
-    Replace `api` with `db` or `cache` to view logs for other services.
-
-5.  **Rebuild and restart services (after code changes or `Dockerfile` updates):**
-    ```bash
-    docker-compose up -d --build
-    ```
-
-6.  **Accessing services:**
-    *   API: `http://localhost:3000`
-    *   PostgreSQL: Accessible from the `api` service via hostname `db` on port `5432`.
-    *   Redis: Accessible from the `api` service via hostname `cache` on port `6379`.
-
 ## Redis Caching (Optional)
 The API integrates Redis for caching frequently accessed data, improving response times and reducing database load.
 
@@ -410,9 +362,9 @@ This section outlines how to set up and run the Waiting Room Manager API on a lo
     ```bash
     kubectl create secret generic api-secret \
       --from-literal=JWT_SECRET='your_super_secret_jwt_key_here' \
-      --from-literal=DB_USERNAME='your_db_username' \
-      --from-literal=DB_PASSWORD='your_db_password' \
-      --from-literal=DB_DATABASE='your_db_database'
+      --from-literal=POSTGRES_USER='your_db_username' \
+      --from-literal=POSTGRES_PASSWORD='your_db_password' \
+      --from-literal=POSTGRES_DB='your_db_database'
     ```
     Replace the placeholder values with your actual secrets.
 
@@ -423,28 +375,34 @@ This section outlines how to set up and run the Waiting Room Manager API on a lo
     ```
     This command will deploy the API, PostgreSQL, and Redis services and deployments/statefulsets, along with the ConfigMap.
 
-6.  **Verify Pods and Services:**
+6. **Run Database Migrations:**
+    After the api-deployment pod is running, execute the database migrations to set up the schema:
+    ```bash
+    kubectl exec $(kubectl get pods -l app=waiting-room-api -o jsonpath='{.items[0].metadata.name}') -- npm run typeorm:migration:run
+    ```
+
+7.  **Verify Pods and Services:**
     Check the status of your deployed pods and services:
     ```bash
     kubectl get pods
     kubectl get svc
     ```
 
-7.  **Access the API:**
+8.  **Access the API:**
     To access the API from your local machine, use port-forwarding:
     ```bash
     kubectl port-forward svc/api-service 3000:3000
     ```
     The API will then be accessible at `http://localhost:3000`.
 
-8.  **View Logs:**
+9.  **View Logs:**
     To view logs for the API deployment:
     ```bash
     kubectl logs -f deployment/api-deployment
     ```
     Replace `api-deployment` with `postgres-statefulset-0` or `redis-deployment` to view logs for other services.
 
-9.  **Tear down the Kind cluster:**
+10.  **Tear down the Kind cluster:**
     When you are done, you can delete the Kind cluster to clean up resources:
     ```bash
     kind delete cluster --name waiting-room-dev
