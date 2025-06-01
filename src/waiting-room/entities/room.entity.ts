@@ -7,6 +7,7 @@ import {
   ManyToOne,
   JoinColumn,
   OneToMany,
+  Index, // Import Index
 } from 'typeorm';
 import { RoomPlayer } from './room-player.entity';
 import { User } from '../../user/entities/user.entity';
@@ -45,6 +46,7 @@ export class Room {
     type: 'boolean',
     default: true, // Rooms are public by default
   })
+  @Index() // Add index for isPublic
   isPublic: boolean;
 
   @ApiProperty({
@@ -88,12 +90,14 @@ export class Room {
     enum: RoomStatus, // Still useful for validation and type safety in code
     default: RoomStatus.WAITING,
   })
+  @Index() // Add index for status
   status: RoomStatus;
 
   @ApiProperty({
     description: 'ID of the user who created and hosts the room',
     example: 'b1c2d3e4-f5a6-7890-1234-567890abcdef',
   })
+  @Index() // Add index for hostId
   @Column({ nullable: false })
   hostId: string; // Foreign key for the host user
 

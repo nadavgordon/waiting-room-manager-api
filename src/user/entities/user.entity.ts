@@ -5,6 +5,7 @@ import {
   OneToMany,
   CreateDateColumn,
   UpdateDateColumn,
+  Index, // Import Index
 } from 'typeorm';
 import { Room } from '../../waiting-room/entities/room.entity';
 import { RoomPlayer } from '../../waiting-room/entities/room-player.entity';
@@ -23,6 +24,7 @@ export class User {
     description: 'Unique username of the user',
     example: 'john_doe',
   })
+  @Index() // Add index for username
   @Column({ unique: true })
   username: string;
 
