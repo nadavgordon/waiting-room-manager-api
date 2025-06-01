@@ -28,8 +28,19 @@ RUN adduser --system --uid 1001 nestjs
 # Create and set permissions for the database directory
 RUN mkdir -p db && chown nestjs:nodejs db
 
-USER nestjs
+# Install curl for healthcheck
+USER root # Temporarily switch to root to install packages
+RUN apk add --no-cache curl
+USER nestjs # Switch back to non-root user
 
 EXPOSE 3000
+
+# Healthcheck instruction
+# --interval: How often to run the check (30 seconds)
+# --timeout: How long to wait for a response (5 seconds)
+# --start-period: Grace period for startup (15 seconds)
+# --retries: Number of consecutive failures to consider unhealthy (3)
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD curl -f http://localhost:3000/health/ready || exit 1
 
 CMD ["node", "dist/main"]

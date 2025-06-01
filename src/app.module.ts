@@ -15,6 +15,7 @@ import { LoggerModule } from './common/logger/logger.module';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { TestLoggingModule } from './test-logging/test-logging.module';
+import { HealthModule } from './health/health.module'; // Import HealthModule
 
 @Module({
   imports: [
@@ -78,6 +79,7 @@ import { TestLoggingModule } from './test-logging/test-logging.module';
         limit: 10, // 10 requests per minute
       },
     ]),
+    HealthModule, // Add HealthModule to imports
   ],
   controllers: [AppController],
   providers: [
