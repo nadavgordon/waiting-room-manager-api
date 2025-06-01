@@ -11,9 +11,11 @@ import {
   HealthCheckResult,
 } from '@nestjs/terminus';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { SkipThrottle } from '@nestjs/throttler';
 
 @ApiTags('Health')
 @Controller('health')
+@SkipThrottle() // Exempt health check endpoints from rate limiting
 export class HealthController {
   constructor(
     private health: HealthCheckService,
