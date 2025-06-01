@@ -17,6 +17,9 @@ FROM node:22-alpine AS production
 
 WORKDIR /app
 
+# Install curl first, as root (default user for this stage initially)
+RUN apk add --no-cache curl
+
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package*.json ./
@@ -28,10 +31,7 @@ RUN adduser --system --uid 1001 nestjs
 # Create and set permissions for the database directory
 RUN mkdir -p db && chown nestjs:nodejs db
 
-# Install curl for healthcheck
-USER root # Temporarily switch to root to install packages
-RUN apk add --no-cache curl
-USER nestjs # Switch back to non-root user
+USER nestjs # Switch to the non-root user for running the application
 
 EXPOSE 3000
 

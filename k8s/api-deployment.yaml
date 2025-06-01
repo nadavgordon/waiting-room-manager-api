@@ -14,6 +14,10 @@ spec:
       labels:
         app: waiting-room-api
     spec:
+      # This security context is needed for Kind clusters to handle volume mounts with non-root users
+      securityContext:
+        runAsUser: 0
+        runAsGroup: 0
       containers:
         - name: waiting-room-api
           image: waiting-room-api:local
