@@ -328,6 +328,8 @@ Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
 
 This section outlines how to set up and run the Waiting Room Manager API on a local Kubernetes cluster using Kind (Kubernetes in Docker).
 
+> **Important Note on Naming Conventions**: While the package name is `waiting-room-manager-api`, the Kubernetes resources use the shorter name `waiting-room-api` in labels, selectors, and container names. The Kind cluster is named `waiting-room-dev`. These naming inconsistencies are maintained for backward compatibility.
+
 ### Prerequisites
 
 *   **Docker**: Required for Kind to run Kubernetes nodes as Docker containers.
@@ -366,6 +368,10 @@ This section outlines how to set up and run the Waiting Room Manager API on a lo
       --from-literal=POSTGRES_PASSWORD='your_db_password' \
       --from-literal=POSTGRES_DB='your_db_database'
     ```
+    ```bash
+    kubectl create secret generic redis-secret --from-literal=REDIS_PASSWORD=your_redis_password
+    ```
+    
     Replace the placeholder values with your actual secrets.
 
 5.  **Apply all Kubernetes manifests:**
@@ -403,7 +409,36 @@ This section outlines how to set up and run the Waiting Room Manager API on a lo
     Replace `api-deployment` with `postgres-statefulset-0` or `redis-deployment` to view logs for other services.
 
 10.  **Tear down the Kind cluster:**
-    When you are done, you can delete the Kind cluster to clean up resources:
-    ```bash
-    kind delete cluster --name waiting-room-dev
-    ```
+     When you are done, you can delete the Kind cluster to clean up resources:
+     ```bash
+     kind delete cluster --name waiting-room-dev
+     ```
+
+### Troubleshooting Common Kind Deployment Issues
+
+#### 1. Redis Secret Missing
+If you encounter an error like `secret "redis-secret" not found`, you need to create the Redis password secret:
+
+```bash
+kubectl create secret generic redis-secret --from-literal=REDIS_PASSWORD=your_redis_password
+```
+
+#### 2. Container User Permissions in Kind
+If pods fail to start with errors like `failed to create containerd container: mount callback failed... no users found`, this is due to non-root user permission issues in Kind.
+
+Solution: Patch the deployment to run as root (for development environments only):
+
+```bash
+kubectl patch deployment api-deployment -p '{"spec":{"template":{"spec":{"securityContext":{"runAsUser": 0, "runAsGroup": 0}}}}}'
+```
+
+> **Security Note**: Running as root is not recommended for production environments. This is a workaround for local development in Kind.
+
+#### 3. Port Conflicts
+If you encounter `EADDRINUSE` errors when running the application locally, it's likely because port 3000 is already in use by the port-forwarded Kubernetes service. Use a different local port for port-forwarding:
+
+```bash
+kubectl port-forward svc/api-service 3001:3000
+```
+
+This makes the service available at http://localhost:3001 instead.
