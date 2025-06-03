@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Logger } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import { LoggerService } from '../common/logger/logger.service';
 
 /**

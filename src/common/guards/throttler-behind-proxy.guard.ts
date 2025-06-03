@@ -14,7 +14,13 @@ export class ThrottlerBehindProxyGuard extends ThrottlerGuard {
    * @param req The incoming request object.
    * @returns The client's IP address.
    */
-  protected getIp(req: Record<string, any>): string {
-    return req.ips?.length ? req.ips[0] : req.ip;
+  protected getIp(req: Record<string, unknown>): string {
+    // Check if ips exists and is an array with elements
+    const ips = req.ips as string[] | undefined;
+    if (Array.isArray(ips) && ips.length > 0) {
+      return ips[0];
+    }
+    // Fall back to ip
+    return (req.ip as string) || '127.0.0.1';
   }
 }

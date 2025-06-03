@@ -3,10 +3,11 @@ import {
   ArgumentsHost,
   HttpException,
   HttpStatus,
-  Logger,
 } from '@nestjs/common';
 import { BaseExceptionFilter } from '@nestjs/core';
 import { createLogger, format, transports } from 'winston';
+import { Response } from 'express';
+import { Request } from 'express';
 
 @Catch()
 export class AllExceptionsFilter extends BaseExceptionFilter {
@@ -33,8 +34,8 @@ export class AllExceptionsFilter extends BaseExceptionFilter {
    */
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
-    const response = ctx.getResponse();
-    const request = ctx.getRequest();
+    const response = ctx.getResponse<Response>();
+    const request = ctx.getRequest<Request>();
 
     // Determine the HTTP status code. If it's an `HttpException`, use its status; otherwise, default to 500.
     const status =
@@ -43,9 +44,15 @@ export class AllExceptionsFilter extends BaseExceptionFilter {
         : HttpStatus.INTERNAL_SERVER_ERROR;
 
     // Extract the error message. For `HttpException`, it can be a string or an object.
+    const exceptionResponse =
+      exception instanceof HttpException ? exception.getResponse() : null;
     const message =
       exception instanceof HttpException
-        ? (exception.getResponse() as any).message || exception.getResponse()
+        ? typeof exceptionResponse === 'object' &&
+          exceptionResponse !== null &&
+          'message' in exceptionResponse
+          ? (exceptionResponse as { message: string }).message
+          : exceptionResponse
         : 'Internal server error';
 
     // Construct the standardized error response payload.
@@ -53,16 +60,33 @@ export class AllExceptionsFilter extends BaseExceptionFilter {
       statusCode: status,
       timestamp: new Date().toISOString(),
       path: request.url,
-      message: typeof message === 'object' ? message : message,
+      message: message,
     };
 
+    // Format the message safely to avoid '[object Object]' stringification issues
+    const safeMessage =
+      typeof message === 'string'
+        ? message
+        : message === null
+          ? 'null'
+          : typeof message === 'object'
+            ? JSON.stringify(message)
+            : String(message);
+
     // Log the error with full details, including stack trace for debugging.
-    this.logger.error(`Unhandled exception: ${message}`, {
+    this.logger.error(`Unhandled exception: ${safeMessage}`, {
       ...errorResponse,
       stack: exception instanceof Error ? exception.stack : undefined,
     });
 
     // Send the error response to the client.
-    response.status(status).json(errorResponse);
+    if (
+      typeof response.status === 'function' &&
+      typeof response.json === 'function'
+    ) {
+      response.status(status).json(errorResponse);
+    } else {
+      console.error('Unable to send response, invalid response object');
+    }
   }
 }

@@ -20,8 +20,10 @@ import { User } from '../user/entities/user.entity';
     // It's configured asynchronously to allow injecting `ConfigService` for dynamic secret retrieval.
     JwtModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET'), // JWT secret from environment variables for security.
+      useFactory: (
+        configService: ConfigService,
+      ): { secret: string; signOptions: { expiresIn: string } } => ({
+        secret: configService.get<string>('JWT_SECRET') || 'development-secret', // JWT secret from environment variables or fallback for development
         signOptions: {
           expiresIn:
             configService.get<string>('JWT_ACCESS_TOKEN_EXPIRATION_TIME') ||

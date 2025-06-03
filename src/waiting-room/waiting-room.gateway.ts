@@ -15,12 +15,33 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
+import { User } from '../user/entities/user.entity';
 import { Room } from './entities/room.entity';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from '../user/user.service';
 import { WsAuthGuard } from '../auth/ws-auth.guard';
 import { JoinRoomDto } from './dto/join-room.dto';
 import { LeaveRoomDto } from './dto/leave-room.dto';
+
+/**
+ * Interface for JWT payload structure
+ */
+interface JwtPayload {
+  sub: string;
+  username: string;
+  iat?: number;
+  exp?: number;
+}
+
+/**
+ * Interface for socket client data with user information
+ */
+interface SocketWithUserData extends Socket {
+  data: {
+    user?: User;
+    [key: string]: any;
+  };
+}
 
 @WebSocketGateway({
   // Configures CORS for WebSocket connections, allowing specified origins to connect.
@@ -46,16 +67,25 @@ export class WaitingRoomGateway
    * This method is invoked when a new WebSocket connection is established.
    * It can be used for initial setup or logging of new clients.
    */
-  async handleConnection(client: Socket, ...args: any[]) {
+  /**
+   * Handles new WebSocket connections
+   * Verifies the JWT token, finds the associated user, and assigns the user to the socket client data
+   */
+  async handleConnection(client: SocketWithUserData) {
     try {
       const authToken = client.handshake.headers.authorization?.split(' ')[1];
       if (!authToken) {
         throw new UnauthorizedException('No authorization token provided.');
       }
-      const payload = this.jwtService.verify(authToken);
+      // Using verify with known payload structure
+      const payload: JwtPayload = this.jwtService.verify(authToken);
       const user = await this.userService.findOne(payload.sub);
       if (!user) {
         throw new UnauthorizedException('User not found.');
+      }
+      // Ensure client.data is initialized
+      if (!client.data) {
+        client.data = {};
       }
       client.data.user = user;
       this.logger.log(
@@ -63,7 +93,7 @@ export class WaitingRoomGateway
       );
     } catch (error) {
       this.logger.error(
-        `Client connection failed: ${client.id} - ${error.message}`,
+        `Client connection failed: ${client.id} - ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
       client.disconnect(true);
     }
@@ -74,7 +104,7 @@ export class WaitingRoomGateway
    * This method is invoked when a WebSocket client disconnects.
    * It can be used for cleanup or logging of disconnections.
    */
-  handleDisconnect(client: Socket) {
+  handleDisconnect(client: SocketWithUserData) {
     this.logger.log(`Client disconnected: ${client.id}`);
   }
 
@@ -95,7 +125,7 @@ export class WaitingRoomGateway
    * @param roomId The ID of the room whose players have been updated.
    * @param players The updated list of players in the room.
    */
-  emitRoomPlayersUpdate(roomId: string, players: any[]) {
+  emitRoomPlayersUpdate(roomId: string, players: User[]) {
     this.server.to(roomId).emit('roomPlayersUpdated', { roomId, players });
   }
 
@@ -111,11 +141,14 @@ export class WaitingRoomGateway
   @SubscribeMessage('joinRoomUpdates')
   handleJoinRoomUpdates(
     @MessageBody() joinRoomDto: JoinRoomDto,
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() client: SocketWithUserData,
   ) {
-    client.join(joinRoomDto.roomId);
+    // Safe handling for join room operation
+    void client.join(joinRoomDto.roomId);
+
+    const username = client.data?.user?.username || 'unknown';
     this.logger.log(
-      `Client ${client.id} (User: ${client.data.user.username}) joined room updates for room: ${joinRoomDto.roomId}`,
+      `Client ${client.id} (User: ${username}) joined room updates for room: ${joinRoomDto.roomId}`,
     );
   }
 
@@ -131,11 +164,14 @@ export class WaitingRoomGateway
   @SubscribeMessage('leaveRoomUpdates')
   handleLeaveRoomUpdates(
     @MessageBody() leaveRoomDto: LeaveRoomDto,
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() client: SocketWithUserData,
   ) {
-    client.leave(leaveRoomDto.roomId);
+    // Safe handling for leave room operation
+    void client.leave(leaveRoomDto.roomId);
+
+    const username = client.data?.user?.username || 'unknown';
     this.logger.log(
-      `Client ${client.id} (User: ${client.data.user.username}) left room updates for room: ${leaveRoomDto.roomId}`,
+      `Client ${client.id} (User: ${username}) left room updates for room: ${leaveRoomDto.roomId}`,
     );
   }
 }

@@ -27,13 +27,13 @@ async function initializeDataSourceWithRetry(
       const delay = initialDelay * Math.pow(2, retries - 1); // Exponential backoff
       logger.error(
         `Database connection failed (attempt ${retries}/${maxRetries}). Retrying in ${delay / 1000}s...`,
-        error.stack,
+        error instanceof Error ? error.stack : String(error),
         'DataSource',
       );
       if (retries >= maxRetries) {
         logger.error(
           'Max retries reached. Could not connect to the database.',
-          error.stack,
+          error instanceof Error ? error.stack : String(error),
           'DataSource',
         );
         throw error; // Re-throw the error to stop the application
@@ -61,7 +61,7 @@ async function bootstrap() {
   } catch (error) {
     logger.error(
       'Application startup failed due to database connection issues. Exiting.',
-      error.stack,
+      error instanceof Error ? error.stack : String(error),
       'Bootstrap',
     );
     process.exit(1); // Exit if DB connection fails after retries
@@ -189,4 +189,10 @@ async function bootstrap() {
   // Start the NestJS application, listening on the configured port.
   await app.listen(process.env.PORT ?? 3000);
 }
-bootstrap();
+void bootstrap().catch((err) => {
+  console.error(
+    'Failed to start application:',
+    err instanceof Error ? err.stack : String(err),
+  );
+  process.exit(1);
+});

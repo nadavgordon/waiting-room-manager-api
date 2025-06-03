@@ -31,10 +31,20 @@ export class WsAuthGuard extends AuthGuard('jwt') implements CanActivate {
     return super.canActivate(context);
   }
 
-  handleRequest(err: any, user: any, info: any) {
+  handleRequest<TUser = unknown>(
+    err: Error | null,
+    user: TUser | null,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _info: unknown,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _context?: ExecutionContext,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _status?: unknown,
+  ): TUser {
     if (err || !user) {
       throw err || new UnauthorizedException();
     }
-    return user;
+    // Return the user with the correct type
+    return user as TUser;
   }
 }

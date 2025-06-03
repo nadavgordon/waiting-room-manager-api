@@ -1,36 +1,18 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { WaitingRoomGateway } from '../src/waiting-room/waiting-room.gateway';
-import { WaitingRoomService } from '../src/waiting-room/waiting-room.service';
-import { Server, Socket } from 'socket.io';
+// import { WaitingRoomService } from '../src/waiting-room/waiting-room.service'; // Removed
+import { Socket } from 'socket.io'; // Removed unused Server import
 import { RoomPlayerStatus } from '../src/waiting-room/enums/room-player-status.enum';
 import { Room, RoomStatus } from '../src/waiting-room/entities/room.entity'; // Import Room and RoomStatus
 import { User } from '../src/user/entities/user.entity'; // Import User entity
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from '../src/user/user.service';
-import { UnauthorizedException } from '@nestjs/common';
+// import { UnauthorizedException } from '@nestjs/common'; // Removed unused import
 import { WsAuthGuard } from '../src/auth/ws-auth.guard';
 import { JoinRoomDto } from '../src/waiting-room/dto/join-room.dto';
 import { LeaveRoomDto } from '../src/waiting-room/dto/leave-room.dto';
 
-// Mock for the socket.io server instance
-const mockIoServer = {
-  to: jest.fn().mockReturnThis(), // Allows chaining .to().emit()
-  emit: jest.fn(),
-  sockets: {
-    adapter: {
-      rooms: new Map(),
-    },
-  },
-};
-
-// Mock for a client socket
-const mockSocketClient = {
-  join: jest.fn(),
-  leave: jest.fn(),
-  emit: jest.fn(),
-  data: { user: { userId: 'test-user-id', username: 'test-username' } },
-  id: 'test-socket-id',
-};
+// These mocks have been moved to more specific contexts where they are used
 
 /**
  * @file waiting-room.gateway.spec.ts
@@ -41,10 +23,9 @@ const mockSocketClient = {
  */
 describe('WaitingRoomGateway', () => {
   let gateway: WaitingRoomGateway;
-  let service: WaitingRoomService; // The mocked WaitingRoomService
-  let jwtService: JwtService; // Added for direct mocking in tests
-  let userService: UserService; // Added for direct mocking in tests
-  let wsAuthGuard: WsAuthGuard; // Added for direct mocking in tests
+  // let service: WaitingRoomService; // Removed
+  let jwtService: JwtService;
+  let userService: UserService;
 
   // Mock for the socket.io server instance.
   // This mock allows us to spy on `to` and `emit` methods to verify WebSocket events.
@@ -75,14 +56,10 @@ describe('WaitingRoomGateway', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         WaitingRoomGateway,
-        {
-          provide: WaitingRoomService,
-          useValue: {
-            // Only mock methods that are actually called by the gateway's existing methods.
-            // In this gateway, service methods are not directly called in handleConnection/Disconnect
-            // or the SubscribeMessage handlers, so an empty mock is sufficient for now.
-          },
-        },
+        // { // Provider for WaitingRoomService removed
+        //   provide: WaitingRoomService,
+        //   useValue: {},
+        // },
         {
           provide: JwtService,
           useValue: {
@@ -100,10 +77,10 @@ describe('WaitingRoomGateway', () => {
     }).compile();
 
     gateway = module.get<WaitingRoomGateway>(WaitingRoomGateway);
-    service = module.get<WaitingRoomService>(WaitingRoomService); // Get the mocked service instance
-    jwtService = module.get<JwtService>(JwtService); // Get the mocked JwtService instance
-    userService = module.get<UserService>(UserService); // Get the mocked UserService instance
-    wsAuthGuard = module.get<WsAuthGuard>(WsAuthGuard); // Get the WsAuthGuard instance
+    // service = module.get<WaitingRoomService>(WaitingRoomService); // Removed
+    jwtService = module.get<JwtService>(JwtService);
+    userService = module.get<UserService>(UserService);
+    // WsAuthGuard is instantiated locally in tests that need it
 
     // Manually assign the mocked server to the gateway instance's `server` property.
     // This is necessary because `@WebSocketServer()` decorator assigns the real server at runtime.
@@ -157,13 +134,17 @@ describe('WaitingRoomGateway', () => {
 
       await gateway.handleConnection(client);
 
+      // Use arrow functions to avoid unbound method warnings
       expect(jwtService.verify).toHaveBeenCalledWith(mockToken);
-      expect(userService.findOne).toHaveBeenCalledWith(mockUser.id);
+      const findOneMethod = userService.findOne;
+      expect(findOneMethod).toHaveBeenCalledWith(mockUser.id);
       expect(client.data.user).toEqual(mockUser);
       expect(loggerSpy).toHaveBeenCalledWith(
         `Client connected: ${client.id} (User: ${mockUser.username})`,
       );
-      expect(client.disconnect).not.toHaveBeenCalled();
+      // Use local reference to avoid unbound method warning
+      const disconnectFn = client.disconnect;
+      expect(disconnectFn).not.toHaveBeenCalled();
     });
 
     it('should throw UnauthorizedException if no authorization token is provided', async () => {
@@ -301,7 +282,22 @@ describe('WaitingRoomGateway', () => {
      */
     it('should emit roomPlayersUpdated event to a specific room', () => {
       const roomId = 'room1';
-      const players = [{ userId: 'player1', status: RoomPlayerStatus.ACTIVE }]; // Mock player data
+      // Create mock players with partial User properties
+      const players = [
+        {
+          id: 'player1',
+          username: 'testUser',
+          passwordHash: 'hash',
+          refreshTokenHash: null,
+          refreshTokenExpiresAt: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          hostedRooms: [],
+          roomPlayers: [],
+          // Extra property for test purposes
+          status: RoomPlayerStatus.ACTIVE,
+        } as unknown as User,
+      ]; // Cast to unknown then User
       gateway.emitRoomPlayersUpdate(roomId, players); // Call the method to be tested
       expect(mockIoServer.to).toHaveBeenCalledWith(roomId); // Verify `to` method was called with the room ID
       expect(mockIoServer.to(roomId).emit).toHaveBeenCalledWith(
@@ -322,7 +318,7 @@ describe('WaitingRoomGateway', () => {
       const module: TestingModule = await Test.createTestingModule({
         providers: [
           WaitingRoomGateway,
-          { provide: WaitingRoomService, useValue: {} },
+          // { provide: WaitingRoomService, useValue: {} }, // Removed
           { provide: JwtService, useValue: { verify: jest.fn() } },
           { provide: UserService, useValue: { findOne: jest.fn() } },
           {
@@ -335,7 +331,7 @@ describe('WaitingRoomGateway', () => {
       gateway = module.get<WaitingRoomGateway>(WaitingRoomGateway);
       // Assign the local mock to the global wsAuthGuard for consistency if needed elsewhere,
       // but for this describe block, localWsAuthGuard is sufficient.
-      wsAuthGuard = localWsAuthGuard as unknown as WsAuthGuard;
+      // Using localWsAuthGuard directly in tests
       (gateway as any).server = mockIoServer;
     });
 
@@ -367,7 +363,7 @@ describe('WaitingRoomGateway', () => {
       const module: TestingModule = await Test.createTestingModule({
         providers: [
           WaitingRoomGateway,
-          { provide: WaitingRoomService, useValue: {} },
+          // { provide: WaitingRoomService, useValue: {} }, // Removed
           { provide: JwtService, useValue: { verify: jest.fn() } },
           { provide: UserService, useValue: { findOne: jest.fn() } },
           {
@@ -378,9 +374,9 @@ describe('WaitingRoomGateway', () => {
       }).compile();
 
       gateway = module.get<WaitingRoomGateway>(WaitingRoomGateway);
-      // Assign the local mock to the global wsAuthGuard for consistency if needed elsewhere,
+      // Using localWsAuthGuard directly in tests
       // but for this describe block, localWsAuthGuard is sufficient.
-      wsAuthGuard = localWsAuthGuard as unknown as WsAuthGuard;
+
       (gateway as any).server = mockIoServer;
     });
 

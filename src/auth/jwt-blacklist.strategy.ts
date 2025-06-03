@@ -6,6 +6,17 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { Inject } from '@nestjs/common';
 import { LoggerService } from '../common/logger/logger.service';
+import { Request } from 'express';
+
+/**
+ * Interface for JWT payload structure
+ */
+interface JwtPayload {
+  sub: string;
+  username: string;
+  iat?: number;
+  exp?: number;
+}
 
 /**
  * @file jwt-blacklist.strategy.ts
@@ -39,9 +50,13 @@ export class JwtBlacklistStrategy extends PassportStrategy(
    * @returns An object representing the authenticated user
    * @throws UnauthorizedException if the token is blacklisted
    */
-  async validate(request: any, payload: any) {
+  async validate(request: Request, payload: JwtPayload) {
     // Extract the token from the Authorization header
-    const token = request.headers.authorization.split(' ')[1];
+    const authHeader = request.headers.authorization;
+    if (!authHeader) {
+      throw new UnauthorizedException('Authorization header is missing');
+    }
+    const token = authHeader.split(' ')[1];
 
     // Check if the token is blacklisted
     const isBlacklisted = await this.cacheManager.get(`blacklist:${token}`);

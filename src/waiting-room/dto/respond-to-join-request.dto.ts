@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsNotEmpty, IsUUID } from 'class-validator';
+import { IsEnum, IsNotEmpty } from 'class-validator';
 
 export enum JoinRequestDecision {
   APPROVE = 'approve',

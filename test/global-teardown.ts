@@ -7,6 +7,9 @@
 import { AppDataSource } from '../src/db/data-source';
 
 export default async () => {
+  // Add a small delay to allow other async operations (like afterEach cleanups) to complete
+  await new Promise((resolve) => setTimeout(resolve, 500));
+
   // Check if the TypeORM data source is initialized.
   if (AppDataSource.isInitialized) {
     // Drop the entire database to remove all test data and schema.

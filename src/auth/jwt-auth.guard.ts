@@ -40,13 +40,29 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
    * @returns The authenticated user object.
    * @throws UnauthorizedException if authentication fails.
    */
-  handleRequest(err: any, user: any, info: any) {
+  handleRequest<TUser = any>(
+    err: any,
+    user: any,
+    info: any,
+    // These parameters are part of the interface but not used in this implementation
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _context?: ExecutionContext,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _status?: any,
+  ): TUser {
+    // Internal type narrowing for safer operations
     if (err || !user) {
-      throw (
-        err ||
-        new UnauthorizedException(info?.message || 'User is not authenticated')
-      );
+      // Extract message safely from info object
+      let errorMessage = 'User is not authenticated';
+      if (info && typeof info === 'object' && 'message' in info) {
+        // Access message property safely after verifying it exists
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+        const message = info.message;
+        // Using type checking to safely convert to string
+        errorMessage = typeof message === 'string' ? message : String(message);
+      }
+      throw err || new UnauthorizedException(errorMessage);
     }
-    return user;
+    return user as TUser;
   }
 }

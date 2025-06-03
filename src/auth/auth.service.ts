@@ -12,6 +12,38 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { Inject } from '@nestjs/common';
 
+/**
+ * JWT payload structure used for token generation and verification
+ */
+interface JwtPayload {
+  sub: string;
+  username: string;
+  iat?: number;
+  exp: number;
+  nonce?: number;
+}
+
+/**
+ * Type guard function to check if a value is a JwtPayload with an exp property
+ */
+function isJwtPayloadWithExp(value: unknown): value is JwtPayload {
+  const obj = value as Record<string, unknown>;
+  return (
+    value !== null &&
+    typeof value === 'object' &&
+    'exp' in obj &&
+    typeof obj.exp === 'number'
+  );
+}
+
+/**
+ * User interface with minimum fields required for authentication
+ */
+interface AuthUser {
+  id: string;
+  username: string;
+}
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -32,7 +64,10 @@ export class AuthService {
    * @param pass The plain-text password provided by the user.
    * @returns The user object (without the password hash) if credentials are valid, otherwise `null`.
    */
-  async validateUser(username: string, pass: string): Promise<any> {
+  async validateUser(
+    username: string,
+    pass: string,
+  ): Promise<Omit<User, 'passwordHash'> | null> {
     this.logger.log(`Attempting to validate user: ${username}`, 'AuthService');
     const user = await this.userService.findOne(username);
     if (!user) {
@@ -52,6 +87,7 @@ export class AuthService {
     }
     this.logger.log(`User validated successfully: ${username}`, 'AuthService');
     // Exclude the password hash from the returned user object for security.
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { passwordHash, ...result } = user;
     return result;
   }
@@ -62,7 +98,7 @@ export class AuthService {
    * @param user The validated user object for whom the token is to be generated.
    * @returns An object containing the `access_token`.
    */
-  async login(user: any) {
+  async login(user: AuthUser) {
     this.logger.log(
       `User login initiated for: ${user.username}`,
       'AuthService',
@@ -71,7 +107,7 @@ export class AuthService {
       username: user.username,
       sub: user.id,
       nonce: Date.now(), // Add a timestamp to ensure each token is unique
-    };
+    } as JwtPayload;
     const accessToken = this.jwtService.sign(payload);
 
     const refreshToken = uuidv4();
@@ -113,7 +149,7 @@ export class AuthService {
 
     // Find the user with the matching refresh token
     const user = users.find(
-      (u) =>
+      (u: User) =>
         u.refreshTokenHash &&
         bcrypt.compareSync(refreshToken, u.refreshTokenHash),
     );
@@ -138,7 +174,7 @@ export class AuthService {
       username: user.username,
       sub: user.id,
       nonce: Date.now(), // Add a timestamp to ensure each token is unique
-    };
+    } as JwtPayload;
     const newAccessToken = this.jwtService.sign(payload);
     const newRefreshToken = uuidv4();
     const newRefreshTokenHash = await bcrypt.hash(newRefreshToken, 10);
@@ -170,16 +206,19 @@ export class AuthService {
    */
   async revokeToken(token: string): Promise<boolean> {
     this.logger.log('Attempting to revoke token', 'AuthService');
-    const decodedToken = this.jwtService.decode(token);
-    if (
-      !decodedToken ||
-      typeof decodedToken === 'string' ||
-      !decodedToken.exp
-    ) {
-      this.logger.warn('Invalid token for revocation', 'AuthService');
+    // Use an explicit unknown type for the decoded token first
+    const decodedTokenUnknown: unknown = this.jwtService.decode(token);
+
+    // Use our type guard function to check if the token has the correct structure
+    if (!isJwtPayloadWithExp(decodedTokenUnknown)) {
+      this.logger.warn('Invalid token format for revocation', 'AuthService');
       return false;
     }
 
+    // Now decodedToken is properly typed as JwtPayload
+    const decodedToken = decodedTokenUnknown;
+
+    // At this point TypeScript knows decodedToken is a valid JwtPayload with exp property
     const expiresIn = decodedToken.exp - Math.floor(Date.now() / 1000); // Time until expiration in seconds
     if (expiresIn > 0) {
       await this.cacheManager.set(`blacklist:${token}`, 1, expiresIn * 1000); // Store in cache with token's remaining TTL
@@ -204,7 +243,10 @@ export class AuthService {
    * @returns The newly created user object (without the password hash).
    * @throws UnauthorizedException if the username already exists, preventing duplicate accounts.
    */
-  async register(username: string, password: string): Promise<any> {
+  async register(
+    username: string,
+    password: string,
+  ): Promise<Omit<User, 'passwordHash'>> {
     this.logger.log(`Attempting to register user: ${username}`, 'AuthService');
     const existingUser = await this.userService.findOne(username);
     if (existingUser) {
@@ -219,6 +261,7 @@ export class AuthService {
     const user = await this.userService.create(username, hashedPassword);
     this.logger.log(`User registered successfully: ${username}`, 'AuthService');
     // Exclude the password hash from the returned user object.
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { passwordHash, ...result } = user;
     return result;
   }

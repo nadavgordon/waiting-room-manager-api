@@ -45,7 +45,8 @@ export class HealthController {
   @HealthCheck()
   @ApiOperation({
     summary: 'Readiness probe for the application.',
-    description: 'Checks if the application and its critical dependencies (e.g., database) are ready.',
+    description:
+      'Checks if the application and its critical dependencies (e.g., database) are ready.',
   })
   @ApiResponse({ status: 200, description: 'Application is ready.' })
   @ApiResponse({ status: 503, description: 'Application is not ready.' })

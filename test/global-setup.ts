@@ -28,13 +28,16 @@ export default async () => {
   // the correct database configuration for the test environment.
   const { AppDataSource } = await import('../src/db/data-source');
 
-  // If the data source is already initialized (e.g., from a previous test run in watch mode),
-  // destroy it to ensure a clean slate.
-  if (AppDataSource.isInitialized) {
-    await AppDataSource.destroy();
+  // Ensure the DataSource is initialized.
+  if (!AppDataSource.isInitialized) {
+    console.log('GlobalSetup: AppDataSource not initialized. Initializing...');
+    await AppDataSource.initialize();
+    console.log('GlobalSetup: AppDataSource initialized.');
+  } else {
+    console.log(
+      'GlobalSetup: AppDataSource already initialized. Proceeding with schema reset.',
+    );
   }
-  // Initialize the TypeORM data source. This connects to the database.
-  await AppDataSource.initialize();
   // Drop the public schema to remove all existing tables and data, ensuring test isolation.
   await AppDataSource.query(`DROP SCHEMA public CASCADE;`);
   // Recreate the public schema.

@@ -13,13 +13,14 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
-import { WaitingRoomService } from './waiting-room.service';
+// import { WaitingRoomService } from './waiting-room.service'; // Old service
+import { RoomQueryService } from './room-query.service';
+import { RoomManagementService } from './room-management.service';
+import { RoomPlayerService } from './room-player.service';
+import { GameOrchestrationService } from './game-orchestration.service';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
-import {
-  RespondToJoinRequestDto,
-  JoinRequestDecision,
-} from './dto/respond-to-join-request.dto';
+import { RespondToJoinRequestDto } from './dto/respond-to-join-request.dto';
 import { Room } from './entities/room.entity';
 import {
   ApiTags,
@@ -45,7 +46,13 @@ import { Throttle } from '@nestjs/throttler';
 @ApiExtraModels(PaginatedResponseDto, Room) // Registers DTOs for Swagger schema generation.
 @Controller('rooms')
 export class WaitingRoomController {
-  constructor(private readonly waitingRoomService: WaitingRoomService) {}
+  constructor(
+    // private readonly waitingRoomService: WaitingRoomService, // Old service
+    private readonly roomQueryService: RoomQueryService,
+    private readonly roomManagementService: RoomManagementService,
+    private readonly roomPlayerService: RoomPlayerService,
+    private readonly gameOrchestrationService: GameOrchestrationService,
+  ) {}
 
   /**
    * Creates a new waiting room.
@@ -76,7 +83,7 @@ export class WaitingRoomController {
     @Body() createRoomDto: CreateRoomDto,
     @GetUser('userId') hostId: string,
   ): Promise<Room> {
-    return this.waitingRoomService.createRoom(createRoomDto, hostId);
+    return this.roomManagementService.createRoom(createRoomDto, hostId);
   }
 
   /**
@@ -152,7 +159,7 @@ export class WaitingRoomController {
     @Query() paginationDto: PaginationDto,
   ): Promise<PaginatedResponseDto<Room>> {
     const { page = 1, limit = 10 } = paginationDto;
-    const { rooms, total } = await this.waitingRoomService.findAllRooms(
+    const { rooms, total } = await this.roomQueryService.findAllRooms(
       userId,
       page,
       limit,
@@ -180,7 +187,7 @@ export class WaitingRoomController {
   })
   @ApiResponse({ status: 404, description: 'Room not found.' })
   async findOne(@Param('id', ParseUUIDPipe) id: string): Promise<Room> {
-    return this.waitingRoomService.findRoomById(id);
+    return this.roomQueryService.findRoomById(id);
   }
 
   /**
@@ -222,7 +229,7 @@ export class WaitingRoomController {
     @Body() updateRoomDto: UpdateRoomDto,
     @GetUser('userId') hostId: string,
   ): Promise<Room> {
-    return this.waitingRoomService.updateRoom(id, updateRoomDto, hostId);
+    return this.roomManagementService.updateRoom(id, updateRoomDto, hostId);
   }
 
   /**
@@ -263,7 +270,7 @@ export class WaitingRoomController {
     @Param('id') id: string,
     @GetUser('userId') hostId: string,
   ): Promise<{ message: string }> {
-    return this.waitingRoomService.deleteRoom(id, hostId);
+    return this.roomManagementService.deleteRoom(id, hostId);
   }
 
   /**
@@ -303,7 +310,7 @@ export class WaitingRoomController {
     @Param('roomId', ParseUUIDPipe) roomId: string,
     @GetUser('userId') userId: string,
   ): Promise<Room> {
-    return this.waitingRoomService.joinRoom(roomId, userId);
+    return this.roomPlayerService.joinRoom(roomId, userId);
   }
 
   /**
@@ -360,7 +367,7 @@ export class WaitingRoomController {
     @Body() respondToJoinRequestDto: RespondToJoinRequestDto,
     @GetUser('userId') hostId: string,
   ): Promise<Room> {
-    return this.waitingRoomService.approveOrDeclineJoinRequest(
+    return this.roomPlayerService.approveOrDeclineJoinRequest(
       roomId,
       pendingUserId,
       respondToJoinRequestDto.decision,
@@ -403,7 +410,7 @@ export class WaitingRoomController {
     @Param('roomId') roomId: string,
     @GetUser('userId') userId: string,
   ): Promise<Room> {
-    return this.waitingRoomService.leaveRoom(roomId, userId);
+    return this.roomPlayerService.leaveRoom(roomId, userId);
   }
 
   /**
@@ -442,6 +449,6 @@ export class WaitingRoomController {
     @Param('roomId') roomId: string,
     @GetUser('userId') hostId: string,
   ): Promise<Room> {
-    return this.waitingRoomService.startGame(roomId, hostId);
+    return this.gameOrchestrationService.startGame(roomId, hostId);
   }
 }

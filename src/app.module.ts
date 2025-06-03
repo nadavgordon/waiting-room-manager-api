@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { CacheModule } from '@nestjs/cache-manager';
 import * as redisStore from 'cache-manager-redis-store';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { WaitingRoomModule } from './waiting-room/waiting-room.module';
@@ -29,7 +29,7 @@ import { HealthModule } from './health/health.module'; // Import HealthModule
     // This allows injecting `ConfigService` to dynamically retrieve database credentials.
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
+      useFactory: (configService: ConfigService): TypeOrmModuleOptions => ({
         type: 'postgres',
         host: configService.get<string>('DB_HOST'),
         port: configService.get<number>('DB_PORT'),
@@ -52,7 +52,7 @@ import { HealthModule } from './health/health.module'; // Import HealthModule
     // `isGlobal: true` makes the cache manager accessible application-wide.
     CacheModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
+      useFactory: (configService: ConfigService): Record<string, any> => ({
         store: redisStore,
         host: configService.get<string>('REDIS_HOST') || 'localhost',
         port: configService.get<number>('REDIS_PORT') || 6379,

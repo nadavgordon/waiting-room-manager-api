@@ -5,7 +5,6 @@ import {
   Min,
   Max,
   IsOptional,
-  IsUUID,
   IsBoolean,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';

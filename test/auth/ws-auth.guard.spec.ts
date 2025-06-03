@@ -112,21 +112,29 @@ describe('WsAuthGuard', () => {
   describe('handleRequest', () => {
     it('should return user if no error and user is provided', () => {
       const mockUser = { id: 'user1', username: 'testuser' };
-      const result = guard.handleRequest(null, mockUser, null);
+      const mockExecutionContext = {} as ExecutionContext;
+      const result = guard.handleRequest(
+        null,
+        mockUser,
+        null,
+        mockExecutionContext,
+      );
       expect(result).toEqual(mockUser);
     });
 
     it('should throw error if error is provided', () => {
       const mockError = new Error('Test Error');
-      expect(() => guard.handleRequest(mockError, null, null)).toThrow(
-        'Test Error',
-      );
+      const mockExecutionContext = {} as ExecutionContext;
+      expect(() =>
+        guard.handleRequest(mockError, null, null, mockExecutionContext),
+      ).toThrow('Test Error');
     });
 
     it('should throw UnauthorizedException if no user is provided and no error', () => {
-      expect(() => guard.handleRequest(null, null, null)).toThrow(
-        UnauthorizedException,
-      );
+      const mockExecutionContext = {} as ExecutionContext;
+      expect(() =>
+        guard.handleRequest(null, null, null, mockExecutionContext),
+      ).toThrow(UnauthorizedException);
     });
   });
 });

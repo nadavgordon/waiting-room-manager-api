@@ -7,7 +7,6 @@ import {
   HttpCode,
   HttpStatus,
   UnauthorizedException,
-  Get,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from '../user/dto/create-user.dto';
@@ -18,10 +17,10 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from './jwt-auth.guard';
+
 import { JwtBlacklistGuard } from './jwt-blacklist.guard';
 import { ThrottlerBehindProxyGuard } from '../common/guards/throttler-behind-proxy.guard';
-import { SkipThrottle, Throttle } from '@nestjs/throttler';
+import { Throttle } from '@nestjs/throttler';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 
 @ApiTags('Auth')
@@ -77,7 +76,7 @@ export class AuthController {
     status: 401,
     description: 'Unauthorized. Invalid username or password.',
   })
-  async login(@Body() loginUserDto: LoginUserDto, @Request() req: any) {
+  async login(@Body() loginUserDto: LoginUserDto) {
     const user = await this.authService.validateUser(
       loginUserDto.username,
       loginUserDto.password,
@@ -128,7 +127,7 @@ export class AuthController {
     status: 401,
     description: 'Unauthorized. Invalid or missing access token.',
   })
-  async logout(@Request() req: any) {
+  async logout(@Request() req: { headers: { authorization: string } }) {
     const token = req.headers.authorization.split(' ')[1]; // Extract token from Bearer header
     await this.authService.revokeToken(token);
     return { message: 'Logged out successfully' };

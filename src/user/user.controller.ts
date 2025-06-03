@@ -44,7 +44,7 @@ export class UserController {
     status: 401,
     description: 'Unauthorized. Invalid or missing JWT token.',
   })
-  async getProfile(@GetUser() user: User): Promise<User> {
+  getProfile(@GetUser() user: User): User {
     // The `user` object is populated by `JwtAuthGuard` and `@GetUser` decorator
     // from the validated JWT payload. No further database lookup is needed here.
     return user;
