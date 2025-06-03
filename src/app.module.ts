@@ -16,6 +16,8 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { TestLoggingModule } from './test-logging/test-logging.module';
 import { HealthModule } from './health/health.module'; // Import HealthModule
+import { DatabaseModule } from './db/database.module'; // Import DatabaseModule for graceful shutdown
+import { CacheCleanupModule } from './cache/cache.module'; // Import CacheCleanupModule for graceful shutdown
 
 @Module({
   imports: [
@@ -80,6 +82,8 @@ import { HealthModule } from './health/health.module'; // Import HealthModule
       },
     ]),
     HealthModule, // Add HealthModule to imports
+    DatabaseModule, // Module for database connection lifecycle management
+    CacheCleanupModule, // Module for Redis connection lifecycle management
   ],
   controllers: [AppController],
   providers: [

@@ -50,6 +50,11 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     bufferLogs: true,
   });
+  
+  // Enable shutdown hooks to ensure graceful application shutdown
+  // This allows the application to close connections, finish requests,
+  // and clean up resources before terminating
+  app.enableShutdownHooks();
 
   // Integrate the custom LoggerService for structured and consistent logging across the application.
   const logger = app.get(LoggerService);
