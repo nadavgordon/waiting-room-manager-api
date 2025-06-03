@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, Logger } from '@nestjs/common';
 import { CacheModule } from '@nestjs/cache-manager';
 import * as redisStore from 'cache-manager-redis-store';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
@@ -52,23 +52,113 @@ import { CacheCleanupModule } from './cache/cache.module'; // Import CacheCleanu
     TestLoggingModule, // Provides endpoints for testing logging security features.
     // CacheModule.registerAsync: Configures Redis as the application's caching layer.
     // `isGlobal: true` makes the cache manager accessible application-wide.
+    // CacheModule.registerAsync: Configures Redis as the application's caching layer with enhanced resilience.
+    // Implements retry strategy, connection timeouts, and reconnection logic.
     CacheModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService): Record<string, any> => ({
-        store: redisStore,
-        host: configService.get<string>('REDIS_HOST') || 'localhost',
-        port: configService.get<number>('REDIS_PORT') || 6379,
-        password: (() => {
-          const redisPassword = configService.get<string>('REDIS_PASSWORD');
-          if (process.env.NODE_ENV === 'production' && !redisPassword) {
-            throw new Error(
-              'REDIS_PASSWORD must be set in production environment.',
+      useFactory: (configService: ConfigService): Record<string, any> => {
+        // Get application logger for Redis connection events
+        const logger = new Logger('RedisCacheModule');
+        
+        return {
+          store: redisStore,
+          host: configService.get<string>('REDIS_HOST') || 'localhost',
+          port: configService.get<number>('REDIS_PORT') || 6379,
+          password: (() => {
+            const redisPassword = configService.get<string>('REDIS_PASSWORD');
+            if (process.env.NODE_ENV === 'production' && !redisPassword) {
+              throw new Error(
+                'REDIS_PASSWORD must be set in production environment.',
+              );
+            }
+            return redisPassword || undefined;
+          })(),
+          ttl: (configService.get<number>('REDIS_TTL') || 3600) * 1000, // Cache TTL in milliseconds
+          
+          // Connection resilience configuration
+          // Set connection timeout (in ms)
+          connectTimeout: configService.get<number>('REDIS_CONNECT_TIMEOUT') || 5000,
+          
+          // Retry strategy for handling connection failures
+          // options contains: error, totalRetryTime, attempt
+          retryStrategy: (options: any) => {
+            // Log retry attempts
+            logger.warn(
+              `Redis connection attempt ${options.attempt} failed. Total retry time: ${options.totalRetryTime}ms`,
+              options.error?.message,
             );
-          }
-          return redisPassword || undefined;
-        })(),
-        ttl: (configService.get<number>('REDIS_TTL') || 3600) * 1000, // Cache TTL in milliseconds, configurable via environment.
-      }),
+            
+            // Stop retrying after 30 seconds of failures
+            if (options.totalRetryTime > 30000) {
+              logger.error('Redis connection failed after maximum retry time', options.error);
+              return undefined; // Stop retrying
+            }
+            
+            // Maximum retry attempts (10)
+            if (options.attempt > 10) {
+              logger.error('Redis connection failed after maximum attempts', options.error);
+              return undefined; // Stop retrying
+            }
+            
+            // Custom error handling
+            if (options.error && options.error.code === 'ECONNREFUSED') {
+              logger.warn('Redis connection refused. Retrying...');
+            }
+            
+            // Exponential backoff with jitter for retry delay
+            // Base: 200ms, multiplier: 2, max: 3000ms, with random jitter
+            const baseDelay = 200;
+            const multiplier = 2;
+            const maxDelay = 3000;
+            const attempt = Math.min(options.attempt, 10); // Cap at 10 for calculation
+            
+            // Calculate delay with exponential backoff
+            const delay = Math.min(baseDelay * Math.pow(multiplier, attempt), maxDelay);
+            
+            // Add jitter (±20% randomization)
+            const jitter = delay * 0.2 * (Math.random() - 0.5) * 2;
+            const finalDelay = Math.floor(delay + jitter);
+            
+            logger.log(`Retrying Redis connection in ${finalDelay}ms`);
+            return finalDelay;
+          },
+          
+          // Event handlers for connection status
+          enableReadyCheck: true,
+          enableOfflineQueue: true,
+          
+          // Connection events (logged for monitoring)
+          onClientCreated: (client: any) => {
+            // Console logs for immediate visibility during testing
+            console.log('\n🔄 REDIS: Redis client created, registering event handlers');
+            
+            client.on('connect', () => {
+              console.log('\n🔄 REDIS: Client connecting...');
+              logger.log('Redis client connecting');
+            });
+            
+            client.on('ready', () => {
+              console.log('\n✅ REDIS: Client connected and ready');
+              logger.log('Redis client connected and ready');
+            });
+            
+            client.on('error', (err: Error) => {
+              console.error('\n❌ REDIS: Client error:', err.message);
+              logger.error('Redis client error', err);
+            });
+            
+            client.on('reconnecting', () => {
+              console.log('\n🔄 REDIS: Client reconnecting...');
+              logger.warn('Redis client reconnecting');
+            });
+            
+            client.on('end', () => {
+              console.log('\n⛔ REDIS: Client disconnected');
+              logger.warn('Redis client disconnected');
+            });
+          },
+        };
+      },
       inject: [ConfigService],
       isGlobal: true,
     }),

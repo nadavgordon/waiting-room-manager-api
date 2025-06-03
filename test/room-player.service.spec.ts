@@ -331,8 +331,9 @@ describe('RoomPlayerService', () => {
      * Test case: Should throw BadRequestException if the room is full.
      */
     it('should throw BadRequestException if room is full', async () => {
-      const fullRoom = { ...mockRoomData, maxPlayers: 1 };
-      // Seed host, user, room, and an existing active player to make it full
+      const fullRoom = { ...mockRoomData, maxPlayers: 2 };
+      // Seed host, user, room, and existing active players to make it full
+      // Using maxPlayers: 2 to comply with database constraint CHK_rooms_maxPlayers_min
       if (AppDataSource.isInitialized) {
         try {
           await AppDataSource.manager.save(
@@ -359,6 +360,17 @@ describe('RoomPlayerService', () => {
             Room,
             AppDataSource.manager.create(Room, fullRoom),
           );
+          // Add the host as a player
+          await AppDataSource.manager.save(
+            RoomPlayer,
+            AppDataSource.manager.create(RoomPlayer, {
+              roomId: MOCK_ROOM_ID,
+              userId: MOCK_HOST_ID,
+              status: RoomPlayerStatus.ACTIVE,
+            }),
+          );
+          
+          // Add second player to fill the room (maxPlayers = 2)
           await AppDataSource.manager.save(
             RoomPlayer,
             AppDataSource.manager.create(RoomPlayer, {
@@ -922,7 +934,8 @@ describe('RoomPlayerService', () => {
      * Test case: Should throw BadRequestException if the room is full on approval.
      */
     it('should throw BadRequestException if room is full on approval', async () => {
-      const fullRoomOnApproval = { ...mockRoomDataForApproval, maxPlayers: 1 };
+      // Using maxPlayers: 2 to comply with database constraint CHK_rooms_maxPlayers_min
+      const fullRoomOnApproval = { ...mockRoomDataForApproval, maxPlayers: 2 };
       await AppDataSource.manager.save(
         User,
         AppDataSource.manager.create(User, {
@@ -951,6 +964,17 @@ describe('RoomPlayerService', () => {
         Room,
         AppDataSource.manager.create(Room, fullRoomOnApproval),
       );
+      // Add the host as a player
+      await AppDataSource.manager.save(
+        RoomPlayer,
+        AppDataSource.manager.create(RoomPlayer, {
+          roomId: MOCK_ROOM_ID,
+          userId: MOCK_HOST_ID,
+          status: RoomPlayerStatus.ACTIVE,
+        }),
+      );
+      
+      // Add second player to fill the room (maxPlayers = 2)
       await AppDataSource.manager.save(
         RoomPlayer,
         AppDataSource.manager.create(RoomPlayer, {
