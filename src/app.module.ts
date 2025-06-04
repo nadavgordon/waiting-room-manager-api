@@ -1,8 +1,9 @@
-import { Module, Logger } from '@nestjs/common';
+import { Module, Logger, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { CacheModule } from '@nestjs/cache-manager';
 import * as redisStore from 'cache-manager-redis-store';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
+import { CorrelationIdMiddleware } from './common/middleware/correlation-id.middleware';
 import { AppService } from './app.service';
 import { WaitingRoomModule } from './waiting-room/waiting-room.module';
 import { UserModule } from './user/user.module';
@@ -129,32 +130,27 @@ import { CacheCleanupModule } from './cache/cache.module'; // Import CacheCleanu
           
           // Connection events (logged for monitoring)
           onClientCreated: (client: any) => {
-            // Console logs for immediate visibility during testing
-            console.log('\n🔄 REDIS: Redis client created, registering event handlers');
+            // Register Redis connection event handlers with proper logging
+            logger.log('Redis client created, registering event handlers', 'RedisCacheModule');
             
             client.on('connect', () => {
-              console.log('\n🔄 REDIS: Client connecting...');
-              logger.log('Redis client connecting');
+              logger.log('Redis client connecting', 'RedisCacheModule');
             });
             
             client.on('ready', () => {
-              console.log('\n✅ REDIS: Client connected and ready');
-              logger.log('Redis client connected and ready');
+              logger.log('Redis client connected and ready', 'RedisCacheModule');
             });
             
             client.on('error', (err: Error) => {
-              console.error('\n❌ REDIS: Client error:', err.message);
-              logger.error('Redis client error', err);
+              logger.error('Redis client error', err?.stack || err?.message, 'RedisCacheModule');
             });
             
             client.on('reconnecting', () => {
-              console.log('\n🔄 REDIS: Client reconnecting...');
-              logger.warn('Redis client reconnecting');
+              logger.warn('Redis client reconnecting', 'RedisCacheModule');
             });
             
             client.on('end', () => {
-              console.log('\n⛔ REDIS: Client disconnected');
-              logger.warn('Redis client disconnected');
+              logger.warn('Redis client disconnected', 'RedisCacheModule');
             });
           },
         };
@@ -186,4 +182,13 @@ import { CacheCleanupModule } from './cache/cache.module'; // Import CacheCleanu
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  /**
+   * Configure global middleware for the application
+   * @param consumer Middleware consumer for configuring middleware
+   */
+  configure(consumer: MiddlewareConsumer): void {
+    // Apply CorrelationIdMiddleware to all routes to enable request correlation IDs
+    consumer.apply(CorrelationIdMiddleware).forRoutes('*');
+  }
+}

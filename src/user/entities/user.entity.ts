@@ -28,6 +28,14 @@ export class User {
   @Column({ unique: true })
   username: string;
 
+  @ApiProperty({
+    description: 'Email address of the user',
+    example: 'john.doe@example.com',
+  })
+  @Index() // Add index for email lookups
+  @Column({ type: 'varchar', unique: true, nullable: true }) // Make nullable to support existing users, explicitly set type
+  email: string | null;
+
   @Column()
   passwordHash: string; // Stores the securely hashed password.
 

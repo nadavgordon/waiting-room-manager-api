@@ -34,5 +34,5 @@ export const AppDataSource = new DataSource({
   poolSize: 20, // Configure connection pooling
   entities: [Room, User, RoomPlayer], // All database entities managed by TypeORM.
   migrations: ['dist/db/migrations/*.js'], // Path to compiled migration files.
-  synchronize: false, // Set to `false` in production to prevent data loss; migrations handle schema updates.
+  synchronize: process.env.NODE_ENV === 'test', // True for test env to auto-create schema, false otherwise.
 });

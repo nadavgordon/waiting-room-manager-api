@@ -5,6 +5,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { HttpAdapterHost } from '@nestjs/core';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import { getCurrentCorrelationId } from './common/logger/logger.service';
 import { LoggerService } from './common/logger/logger.service';
 import helmet from 'helmet';
 import { AppDataSource } from './db/data-source'; // Import AppDataSource
@@ -93,19 +94,17 @@ async function bootstrap() {
   // The `AllExceptionsFilter` ensures that all unhandled exceptions are caught and
   // transformed into a consistent JSON error format, improving API reliability.
   const { httpAdapter } = app.get(HttpAdapterHost);
-  app.useGlobalFilters(new AllExceptionsFilter(httpAdapter));
+  app.useGlobalFilters(new AllExceptionsFilter(httpAdapter, logger));
 
   // Configure Cross-Origin Resource Sharing (CORS) for frontend integration.
   // This controls which origins are allowed to make requests to the API, enhancing security.
   const corsOrigins = process.env.CORS_ORIGINS
     ? process.env.CORS_ORIGINS.split(',')
     : [];
-  app
-    .get(LoggerService)
-    .log(
-      `CORS_ORIGINS configured: ${corsOrigins.length > 0 ? corsOrigins.join(', ') : 'None (restrictive default)'}`,
-      'CORS',
-    );
+  logger.log(
+    `CORS_ORIGINS configured: ${corsOrigins.length > 0 ? corsOrigins.join(', ') : 'None (restrictive default)'}`,
+    'CORS',
+  );
   app.enableCors({
     origin: corsOrigins,
     credentials: true,
@@ -195,6 +194,8 @@ async function bootstrap() {
   await app.listen(process.env.PORT ?? 3000);
 }
 void bootstrap().catch((err) => {
+  // For startup errors before the logger is initialized,
+  // we need to use console as a fallback
   console.error(
     'Failed to start application:',
     err instanceof Error ? err.stack : String(err),

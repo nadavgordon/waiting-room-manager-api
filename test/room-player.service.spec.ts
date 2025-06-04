@@ -179,6 +179,7 @@ describe('RoomPlayerService', () => {
       } as Room;
 
       mockUserData = {
+        email: null,
         id: MOCK_USER_ID,
         username: 'joinuser',
         passwordHash: 'hashedpassword',

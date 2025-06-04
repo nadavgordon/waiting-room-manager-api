@@ -5,9 +5,10 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { BaseExceptionFilter } from '@nestjs/core';
-import { createLogger, format, transports } from 'winston';
 import { Response } from 'express';
 import { Request } from 'express';
+import { LoggerService, getCurrentCorrelationId } from '../logger/logger.service';
+import { CorrelationIdMiddleware } from '../middleware/correlation-id.middleware';
 
 @Catch()
 export class AllExceptionsFilter extends BaseExceptionFilter {
@@ -16,14 +17,15 @@ export class AllExceptionsFilter extends BaseExceptionFilter {
    * across the NestJS application. Its primary role is to standardize error responses
    * and provide consistent logging for operational visibility.
    *
-   * It leverages Winston for structured logging, ensuring that error details,
-   * including stack traces, are captured in a machine-readable format.
+   * It uses the centralized LoggerService for structured logging with correlation IDs,
+   * ensuring that error details, including stack traces, are captured in a machine-readable format.
    */
-  private readonly logger = createLogger({
-    level: process.env.LOG_LEVEL || 'info',
-    format: format.combine(format.timestamp(), format.json()),
-    transports: [new transports.Console()],
-  });
+  constructor(
+    private readonly httpAdapter: any,
+    private readonly logger: LoggerService
+  ) {
+    super(httpAdapter);
+  }
 
   /**
    * Catches and processes exceptions.
@@ -73,11 +75,24 @@ export class AllExceptionsFilter extends BaseExceptionFilter {
             ? JSON.stringify(message)
             : String(message);
 
-    // Log the error with full details, including stack trace for debugging.
-    this.logger.error(`Unhandled exception: ${safeMessage}`, {
-      ...errorResponse,
-      stack: exception instanceof Error ? exception.stack : undefined,
-    });
+    // Extract correlation ID if available
+    const correlationId = CorrelationIdMiddleware.getCorrelationId(request) || 
+                         getCurrentCorrelationId() || 
+                         'unavailable';
+    
+    // Log the error with full details, including stack trace and correlation ID for traceability
+    this.logger.error(
+      `Unhandled exception: ${safeMessage}`,
+      exception instanceof Error ? exception.stack : undefined,
+      'AllExceptionsFilter',
+      // Add additional structured data to the log
+      {
+        correlationId,
+        statusCode: status,
+        path: request.url,
+        timestamp: new Date().toISOString()
+      }
+    );
 
     // Send the error response to the client.
     if (

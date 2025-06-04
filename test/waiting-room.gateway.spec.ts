@@ -108,6 +108,7 @@ describe('WaitingRoomGateway', () => {
     it('should successfully handle connection with valid JWT', async () => {
       const mockToken = 'valid-jwt-token';
       const mockUser: User = {
+        email: null,
         id: 'user-id-1',
         username: 'testuser',
         passwordHash: 'hashedpassword',
@@ -243,6 +244,7 @@ describe('WaitingRoomGateway', () => {
     it('should emit roomUpdated event to all clients', () => {
       // Create a mock User object for the room host.
       const mockHost: User = {
+        email: null,
         id: 'host-id',
         username: 'host-user',
         passwordHash: 'hashedpassword',
