@@ -1,83 +1,122 @@
-# Development Guidelines
+# Agentic LLM Development Guidelines
 
-Best practices for Agentic LLM software development assistance.
+## 1. Environment Setup
 
-## General Rules (for LLM)
+### 1.1 System Configuration
+- **Workspace**: `/home/nadavg/Projects` is a symlink to `/run/media/nadavg/spinner/Projects`
+- **Paths**: Use absolute paths from `/home/nadavg/Projects`.
+- **Directories**: Create nested dirs incrementally to avoid errors.
+- **File Access**: Use MCP filesystem tools if direct access blocked.
 
-- **Environment**: `/home/nadavg/Projects` symlinks to `/run/media/nadavg/spinner/Projects`.
-- **MCP Servers**: Use MCPs; prioritize `Context7` for docs; prioritize internal filesystem tools over MCP.
-- **Git**: Clear commits (e.g., 'feat: X'), consistent branches (`feature/name`). Update local branch before push.
-- **File System**: Full paths from `/home/nadavg/Projects`. Create nested dirs incrementally.
-- **Repo Content**: Version essentials. Exclude sensitive/large/env-specific files via `.gitignore`.
-- **.gitignore Access**: `.gitignore` items may be relevant. Use MCP fs tools or shell to inspect.
-- **Environment Awareness**: Handle env-specific files (e.g., `.env.production`) correctly. Ask if ambiguous.
+### 1.2 Repository Management
+- **Git Workflow**: Descriptive commit messages (`feat: Add user auth`), consistent branch names (`feature/name`).
+- **Gitignore**: Exclude sensitive/large files; use MCP tools/shell for inspection.
+- **Env Files**: Secure access, exclude from version control, handle environment-specific files.
+- **Updates**: Update local repo before pushing to avoid conflicts.
 
-## Code Structure and Maintainability (for LLM)
+## 2. Code Architecture
 
-- **File Size (Max 500 lines)**: Keep files under 500 lines for LLM processing.
-- **Modularity/SRP**: Single responsibility for files/modules/classes/functions.
-- **Large File Metadata**: Files >500 lines need header: synopsis, logic overview, key components.
-- **Large File Editing**: Process large files in ~100 line chunks; verify.
-- **Formatting/Linting**: Adhere to project linters/formatters (e.g., Prettier, ESLint).
-- **Naming Conventions**: Infer from project code (e.g., `camelCase`). Descriptive names.
-- **Constants**: Use named constants for multi-use or non-obvious literals.
-- **Component-Based Design**: Break tasks into small, self-contained, reusable components.
+### 2.1 File Structure
+- **Size Limit**: Files should be <500 lines for better LLM processing & maintainability.
+- **Large Files**: Files >500 lines: add header (synopsis, logic, key components).
+- **Component Design**: <100 LOC, SRP, defined I/O, min dependencies.
+- **Directory Organization**: Group related functionality, separate concerns, follow project conventions.
 
-## Development Process and Practices (for LLM)
+### 2.2 Design Principles
+- **Modularity**: Apply SRP to files, modules, classes, functions.
+- **Naming**: Descriptive, context-appropriate names following project conventions.
+- **Constants**: Use named constants for common/unclear literals.
+- **Idempotency**: Safe repeats: pre-verify state, unique IDs, rollbacks.
+- **Interfaces**: Define clear contracts between components, with validation.
 
-- **Security - Secrets**: Use placeholders for secrets. Use project's secret mechanism (e.g., `.env`).
-- **Testing (TDD Focus)**: Write unit tests before/alongside implementation (e.g., `*.test.js`). Cover primary/edge cases.
-- **Broader Tests**: Note if integration/E2E tests are relevant for broad changes.
-- **Difficult Issues**: If stuck (3-5 tries), summarize attempts/failures before consulting.
-- **Debugging**: When debugging errors in deep call stacks where the symptom is likely distant from the root cause, employ "Call Stack Bisection": iteratively select a function call roughly midway between your current suspected earliest point of failure and the error location. Guide inspection of the program state at the entry of this midpoint function. If the state is already incorrect, the bug lies in the earlier half of the stack; if correct, it's in the later half (or within the midpoint function itself). Update your search boundaries accordingly and repeat this halving process to rapidly narrow down to the function where the state first becomes erroneous, thereby localizing the bug's origin more efficiently than linear tracing. This requires the call stack, error details, and a means to assess program state at chosen points.
-- **Dependency Management**: Use project package manager. Specify versions. Update lock files.
-- **Error Handling**: Robust error handling: specific messages, logging, graceful failure.
-- **Code Comments**: For complex logic, non-obvious decisions, TODOs. Avoid over-commenting.
-- **Performance**: Be mindful of performance. Optimize critical sections if needed.
-- **Code Review Prep**: Ensure code is clean, tested, documented.
-- **Iterative Development**: Small, testable increments. Seek early feedback.
-- **Tool Usage**: Prefer specialized tools (linters, etc.) over generic edits.
-- **Idempotency**: Strive for idempotent operations (e.g., re-runnable scripts).
-- **Configuration**: Prefer config files over hardcoding. Structure for clarity.
-- **API Design**: Follow REST/GraphQL best practices. Consistent, well-documented.
-- **Database Interactions**: Use ORMs/query builders. Sanitize inputs. Use migrations.
+### 2.3 Code Quality
+- **Format/Lint**: Use project standards (e.g. Prettier, ESLint).
+- **Error Handling**: Robust, specific messages, logging, graceful failure.
+- **Security**: Use placeholders for secrets.
+- **Performance**: Optimize critical sections with measurable metrics, data structures, caching.
 
-## Documentation and Communication (for LLM)
+## 3. Development Workflow
 
-- **Clarity/Conciseness**: Communicate clearly and briefly.
-- **Proactive Info**: Offer relevant context/suggestions, don't overwhelm.
-- **Assumption Verification**: State assumptions, ask for confirmation if unsure.
-- **Progress Updates**: Regular updates for complex tasks.
-- **Questioning**: Ask clarifying questions for ambiguous requirements.
-- **Doc Types**: Aware of READMEs, API docs (OpenAPI), code-level docs (JSDoc).
-- **Doc-Code Sync**: Update docs accurately with code changes.
-- **Design Rationale**: Briefly note reasons for significant design choices.
-- **User-Facing Docs**: Identify if user docs need updates. Attempt or flag.
+### 3.1 Testing
+- **TDD**: Unit tests before/with implementation for validation.
+- **Coverage**: Test user features, data transforms, boundaries (empty/null, max values).
+- **Types**: Unit, integration, E2E tests as per change scope.
 
-# MCP Services Guidelines
+### 3.2 Debugging
+- **Troubleshooting**: After 3-5 failed attempts, summarize & ask for help.
+- **Call Stack Bisection**: For deep stack traces, examine midpoint between error origin and manifestation, then recursively narrow search.
 
-## Servers
+### 3.3 Project Management
+- **Dependencies**: Use project package manager, specific versions, update lock files.
+- **Configuration**: Prefer config files (clear structure) over hardcoding.
+- **Development**: Small, testable increments; early feedback.
 
-### Git
-- **Tools**: `git_status`, `git_diff_unstaged`, `git_diff_staged`, `git_diff`, `git_commit`, `git_add`, `git_reset`, `git_log`, `git_create_branch`, `git_checkout`, `git_show`
-- **Use**: Git repository interactions.
+## 4. API & Data
 
-### Fetch
-- **Tools**: `fetch`
-- **Use**: Fetching external URLs.
+### 4.1 API Design
+- **Best Practices**: Follow REST/GraphQL for consistent APIs.
+- **Consistency**: Maintain patterns across endpoints (naming, responses, errors).
+- **Documentation**: Comprehensive API docs (OpenAPI/Swagger).
 
-### Sequential Thinking
-- **Tools**: `sequentialthinking`
-- **Use**: Adaptive complex problem breakdown.
+### 4.2 Database
+- **Data Access**: Use ORMs/query builders for DB interactions.
+- **Validation**: Sanitize all inputs to prevent injection.
+- **Migrations**: Versioned DB migrations, backward compatible, rollbacks.
 
-### Context7
-- **Tools**: `resolve-library-id`, `get_library_docs`
-- **Use**: PRIORITIZE for up-to-date docs. Call `resolve-library-id` first.
+## 5. Documentation
 
-### Filesystem
-- **Tools**: `read_file`, `write_file`, `edit_file`, `move_file`, `read_multiple_files`, `search_files`, `get_file_info`, `list_allowed_directories`, `create_directory`, `list_directory`, `directory_tree`
-- **Use**: File/directory operations. PRIORITIZE internal tools over MCP.
+### 5.1 Code Documentation
+- **Purpose-Driven Comments**: Explain *why*, not *what*; doc design, intent, logic.
+- **Architecture Docs**: Doc system structure, module interactions, data flows.
+- **Non-Obvious Elements**: Doc framework conventions, lib patterns, complex algorithms, custom components.
+- **Doc Standards (adopted from JSDoc)**:
+  - For classes, public methods, DTOs, entities, enums.
+  - Tags: @file, @description, @param, @returns.
+  - No redundant docs for obvious code.
+  - No comments in JSON/YAML.
 
-### Memory
-- **Tools**: `create_entities`, `create_relations`, `add_observations`, `delete_entities`, `delete_relations`, `delete_observations`, `read_graph`, `search_nodes`, `open_nodes`
-- **Use**: Persistent memory operations.
+### 5.2 Communication
+- **Clarity & Conciseness**: Clear, succinct, no verbosity.
+- **Context Provision**: Relevant info, don't overwhelm.
+- **Assumptions**: State clearly, confirm if uncertain.
+- **Accuracy**: Verify info; support position with evidence.
+- **Progress Updates**: Regular updates for complex/long tasks.
+- **Documentation Sync**: Update docs with code changes.
+
+## 6. LLM-Specific Practices
+
+### 6.1 Context Management
+- **Relevance Filtering**: Filter inputs by task; prune irrelevant details.
+- **Information Density**: Optimize delivery (summarize, format, chunk).
+- **State Tracking**: Maintain key state (intent, outcomes) across steps.
+- **Windowing**: Manage context windows effectively for complex reasoning.
+
+### 6.2 Task Handling
+- **Planning**: Break complex ops into steps; track dependencies.
+- **Validation**: Verify at critical points for correctness.
+- **Fallbacks**: Define alternatives (tool error/retry/escalation).
+- **Completion Criteria**: Clear, measurable success metrics.
+- **Prioritization**: High-impact, user-facing issues, critical bugs first.
+
+## 7. Tool Utilization
+
+### 7.1 Tool Strategy
+- **Fallbacks**: If tools stuck/ineffective, use alternatives (e.g. MCP tools, shell commands, etc).
+- **Specialized Tools**: Use purpose-built tools (linters, formatters, test frameworks).
+- **Missing Tools**: Flag if internal tools down/unresponsive.
+- **Error Handling**: Graceful tool failure, meaningful user feedback.
+
+### 7.2 Usage Framework
+- **Direct Response**: Answer if confident in knowledge, no tool needed.
+- **Research**: Proactive tool use for urgent queries (docs, errors, deps).
+- **Scaling**: 1-2 calls for simple tasks, 20+ for complex research.
+- **Learning**: Extract to apply reusable patterns (error handling, state mgmt) from code/examples. Similarly, extract to avoid anti-patterns from code/examples.
+- **Conflicts**: Apply rule hierarchy if ambiguous; default safe or clarify.
+
+## 8. Available MCP Services
+- **Git**: Repo management (commit, branch, diff, log).
+- **Fetch**: Retrieve external URL info.
+- **Sequential Thinking**: Step-by-step complex problem reasoning.
+- **Context7**: Doc access (usage: 'resolve-library-id' → 'get_library_docs').
+- **Filesystem**: File ops (prioritize internal tools if available).
+- **Memory**: Manage persistent context/knowledge.

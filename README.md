@@ -2,24 +2,17 @@
   <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
 </p>
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
 
   <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
     <p align="center">
 <a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
 <a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
 <a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
 <a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
 <a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
 <a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
   <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
 </p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
 # Waiting Room Manager API
 
@@ -38,7 +31,7 @@ This project implements a robust and scalable API for managing multiplayer game 
   - Delete rooms (only by room host).
 - **Database Management**: Utilizes TypeORM with PostgreSQL for managing `Room`, `User`, and `RoomPlayer` entities, with migrations for schema control.
 - **Real-time Communication**: WebSocket integration for instant updates on room status and player changes.
-- **Containerization**: Docker setup for easy deployment.
+- **Containerization**: Built with Docker for deployment via Kubernetes (Kind).
 - **API Documentation**: Swagger/OpenAPI for interactive API exploration.
 - **Global Exception Handling**: Centralized error handling for consistent API responses.
 
@@ -58,7 +51,9 @@ This project implements a robust and scalable API for managing multiplayer game 
 ### Prerequisites
 - Node.js (v18 or higher)
 - npm
-- Docker (optional, for containerized setup)
+- Docker (required for Kubernetes/Kind setup, see below)
+- Kind (for local Kubernetes cluster, see "Kubernetes Local Development with Kind" section)
+- kubectl (for interacting with Kubernetes, see "Kubernetes Local Development with Kind" section)
 
 ### Local Development Setup
 
@@ -76,31 +71,32 @@ This project implements a robust and scalable API for managing multiplayer game 
 3.  **Environment Variables:**
     Create a `.env` file in the project root and populate it with the necessary environment variables. A `.env.example` file is provided for reference.
 
+    This `.env` file is primarily used when running the application directly on your host machine (e.g., using `npm run start:dev`). For Kubernetes deployments (including Kind), configuration is managed via Kubernetes ConfigMaps and Secrets, as detailed in the "Kubernetes Local Development with Kind" section.
+
     ```
     PORT=3000
     JWT_SECRET=_your_super_secret_jwt_key_here_ # IMPORTANT: Change this in production! Use a strong, random string of at least 32 characters. You can generate one using `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
 
     # Database (PostgreSQL) Configuration
     DB_TYPE=postgres
-    DB_HOST=db
+    DB_HOST=localhost
     DB_PORT=5432
     DB_USERNAME=testuser
     DB_PASSWORD=testpassword
     DB_DATABASE=waiting_room_db
 
-    # PostgreSQL service credentials (used by the 'db' service in docker-compose)
-    POSTGRES_USER=testuser
-    POSTGRES_PASSWORD=testpassword
-    POSTGRES_DB=waiting_room_db
 
     # Logging Configuration
     LOG_LEVEL=info # Set to error, warn, info, debug, or verbose. Default is info.
 
     # Redis Cache Configuration
-    REDIS_HOST=cache
+    REDIS_HOST=localhost
     REDIS_PORT=6379
     REDIS_PASSWORD= # Optional: Set if your Redis instance requires a password
     REDIS_TTL=3600 # Cache TTL in seconds (e.g., 1 hour)
+
+    # CORS Configuration (comma-separated list of allowed origins)
+    CORS_ORIGINS=http://localhost:3001 # Adjust to your frontend development URL
     ```
 
     **Important Notes on Environment Variables:**
@@ -152,6 +148,8 @@ These rules are enforced using `@Matches` decorator from `class-validator` in th
         Use this command with caution, as it will revert the last applied migration.
 
 ## Running the Application
+
+For a full local deployment environment including PostgreSQL and Redis running in containers, please refer to the "Kubernetes Local Development with Kind" section below. The following `npm` scripts are for running the application directly on your host, typically for quick development iterations assuming externally managed database/cache instances or when using port-forwarding from a Kind cluster.
 
 ### Development Mode
 ```bash
@@ -304,8 +302,6 @@ Check out a few resources that may come in handy when working with NestJS:
 - Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
 - For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
 - To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
 - Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
 - To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
 - Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).

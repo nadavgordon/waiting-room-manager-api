@@ -6,16 +6,22 @@ import {
   Max,
   IsOptional,
   IsBoolean,
+  MinLength,
+  MaxLength,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateRoomDto {
   @ApiProperty({
     example: 'My Awesome Room',
-    description: 'The name of the waiting room',
+    description: 'The name of the waiting room. Must be 3-50 characters long.',
+    minLength: 3,
+    maxLength: 50,
   })
   @IsString()
   @IsNotEmpty()
+  @MinLength(3)
+  @MaxLength(50)
   name: string;
 
   @ApiProperty({

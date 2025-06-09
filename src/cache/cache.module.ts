@@ -1,4 +1,5 @@
 import { Module, OnModuleDestroy } from '@nestjs/common';
+import { LoggerModule } from '../common/logger/logger.module';
 import { CacheService } from './cache.service';
 
 /**
@@ -7,6 +8,7 @@ import { CacheService } from './cache.service';
  * during application shutdown.
  */
 @Module({
+  imports: [LoggerModule],
   providers: [CacheService],
   exports: [CacheService],
 })

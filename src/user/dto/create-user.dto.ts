@@ -1,5 +1,4 @@
-import { IsString, MinLength, Matches } from 'class-validator';
-
+import { IsString, MinLength, Matches, IsNotEmpty, MaxLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 /**
@@ -10,12 +9,19 @@ import { ApiProperty } from '@nestjs/swagger';
  */
 export class CreateUserDto {
   @ApiProperty({
-    description: 'The username for the new user',
+    description: 'The username for the new user. Must be 3-30 characters long and can only contain alphanumeric characters and underscores.',
     minLength: 3,
+    maxLength: 30,
     example: 'john_doe',
+    pattern: '^[a-zA-Z0-9_]+$'
   })
   @IsString()
+  @IsNotEmpty()
   @MinLength(3)
+  @MaxLength(30)
+  @Matches(/^[a-zA-Z0-9_]+$/, {
+    message: 'Username can only contain alphanumeric characters and underscores',
+  })
   username: string;
 
   @ApiProperty({
@@ -34,7 +40,7 @@ export class CreateUserDto {
   // - At least one special character (`(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?])`)
   // - Total length between 8 and 12 characters (`.{8,12}$`)
   @Matches(
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,12}$/,
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?]).{8,12}$/,
     {
       message:
         'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character, and be between 8 and 12 characters long',
